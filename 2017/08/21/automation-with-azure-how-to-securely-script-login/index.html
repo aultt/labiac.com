@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>Automation with Azure? How to securely script login? | Automation One Day at a Time</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="[Troy Ault](https:&#x2F;&#x2F;social.msdn.microsoft.com&#x2F;profile&#x2F;Troy Ault) 8&#x2F;21&#x2F;2017 3:53:17 PM  Do you have a need to login to azure securely without being prompted?  Often times I am doing demos or writing au">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Automation with Azure? How to securely script login?">
+<meta property="og:url" content="http://example.com/2017/08/21/automation-with-azure-how-to-securely-script-login/index.html">
+<meta property="og:site_name" content="Automation One Day at a Time">
+<meta property="og:description" content="[Troy Ault](https:&#x2F;&#x2F;social.msdn.microsoft.com&#x2F;profile&#x2F;Troy Ault) 8&#x2F;21&#x2F;2017 3:53:17 PM  Do you have a need to login to azure securely without being prompted?  Often times I am doing demos or writing au">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2017-08-21T15:53:44.000Z">
+<meta property="article:modified_time" content="2021-10-22T17:39:12.119Z">
+<meta property="article:author" content="Troy Ault">
+<meta property="article:tag" content="Credential">
+<meta property="article:tag" content="Secure Login">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Automation One Day at a Time" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/typeface-source-code-pro@0.0.71/index.min.css">
+
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Automation One Day at a Time</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-automation-with-azure-how-to-securely-script-login" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2017/08/21/automation-with-azure-how-to-securely-script-login/" class="article-date">
+  <time class="dt-published" datetime="2017-08-21T15:53:44.000Z" itemprop="datePublished">2017-08-21</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Authentication/">Authentication</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      Automation with Azure? How to securely script login?
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>[Troy Ault](<a target="_blank" rel="noopener" href="https://social.msdn.microsoft.com/profile/Troy">https://social.msdn.microsoft.com/profile/Troy</a> Ault) 8/21/2017 3:53:17 PM</p>
+<hr>
+<p>Do you have a need to login to azure securely without being prompted?  Often times I am doing demos or writing automation routines which interact with Azure.  Typically you will see one of two things: </p>
+<ol>
+<li> Get-Credential</li>
+<li>$PlainPassword = “P@ssw0rd” $SecurePassword = $PlainPassword  ConvertTo-SecureString -AsPlainText -Force</li>
+</ol>
+<p>The first one is painful because it requires input from the user running the script and the second one well… is obviously not secure.  Since neither one of these are desirable for automation I went searching for a better solution.  What I found is described in the following article -&gt; <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-authenticate-service-principal">Use Azure PowerShell to create a service principal to access resources</a> Since i use this often I wrapped things into a couple of functions which exist in <a target="_blank" rel="noopener" href="https://github.com/Microsoft/DSC-data-driven-deployment/tree/dev/utility/LabInaBox">LabInaBox</a>.  The two functions I am going to talk about here are New-AzureCertAuthentication and Login-AzurebyCert. New-AzureCertAuthentication is called one time per subscription or resource group depending on how you are looking to secure the authentication.  The function has two mandatory parameters and two optional parameters.  ApplicationDisplayName is required and is the name of the service principal which will be created in your azure subscription which will be granted the permissions required.  You will find this under the subscriptions blade, followed by selecting the subscription then selecting Access control (IAM).  Here you will see the ApplicationDisplayName after you call the function.  Subject is the second required parameter which corresponds to the subject name of the self-signed certificate which will be generated and used for connecting to the service principal url which is created.  Once the function has been called you will find this certificate in the Current User personal certificate folder.  Subscription parameter is not required and will default to your default subscription if not passed.  Resource Group is also not required and should only be passed if you want your permission to be scoped to a particular resource group.  For LabinaBox and everything I do myself I want subscription access so I can create and remove resource groups.  If you have a need to scope at the resource group level the functionality is there.  So this provides up with three possible ways you can call this function which are documented below:</p>
+<ol>
+<li>Securing authentication to the Resource Group Level you would pass the following<ul>
+<li>  New-AzureCertAuthentication -ResourceGroup ‘MyResourceGroup’ -SubscriptionID ‘MySubscriptionID’ -ApplicationName ‘MyApplicationName’ -Subject ‘MyCertSubject’</li>
+</ul>
+</li>
+<li>Securing authentication to the Subscription level and passing the subscription you want to utilize.<ul>
+<li>  New-AzureCertAuthentication -SubscriptionID ‘MySubscriptionID’ -ApplicationName ‘MyApplicationName’ -Subject ‘MyCertSubject’</li>
+</ul>
+</li>
+<li>Securing authentication to the Subscription level using our default subscription<ul>
+<li>  New-AzureCertAuthentication -ApplicationName ‘MyApplicationName’ -Subject ‘MyCertSubject’</li>
+</ul>
+</li>
+</ol>
+<p>New-AzureCertAuthentication only needs to be called once.  When you call it it will prompt for your credentials to connect to your azure subscription.  After it completes it will want to capture the following information:</p>
+<ol>
+<li> Cert Subject - corresponds to Subject passed to New-AzureCertAuthentication</li>
+<li> ApplicationID - This is returned function</li>
+<li> TennantID -  This is returned from the function</li>
+</ol>
+<p>Now we have all the plumbing in place to connect to azure within a script from our machine.  We can simply call Login-AzurebyCert and pass three pieces of information and we will be connected to our subscription and be able to interact with any azure cmd-let.  Below is an example of a call :</p>
+<p>Import-module -name “C:YourPathtoModulemodulesLabinaBox.psm1”</p>
+<p>Login-AzurebyCert -Certsubject ‘MyCertSubject’ -ApplicationID ‘xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx’ -TennantID ‘xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx’ Because I wanted to easily be able to interact with Azure I modified my function to default to my certsubject, applicationid, and tennantid.  Simplifies if I am at PowerShell prompt and want a connection to my subscription. Stay tuned in my next article I will talk about utilizing this cmd-let and Azure Key Vault to build a credential and login to a Azure VM without being prompted.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2017/08/21/automation-with-azure-how-to-securely-script-login/" data-id="ckv2nrjl3000mp8ii4kwo0sgo" data-title="Automation with Azure? How to securely script login?" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Credential/" rel="tag">Credential</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Secure-Login/" rel="tag">Secure Login</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2017/08/29/utilizing-key-vault-to-create-credentials-for-automation/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          Utilizing Key Vault to create credentials for automation.
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2017/05/02/creating-a-sql-container-thats-always-the-latest-build/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Creating a SQL container that&#39;s always the Latest build</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/About-Me/">About Me</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/AlwaysOn/">AlwaysOn</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Authentication/">Authentication</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Azure/">Azure</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Container/">Container</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/DSC/">DSC</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Lab/">Lab</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/SQL-Server/">SQL Server</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/">azure</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/">Azure Data Factory</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/Logic-App/">Logic App</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/Logic-App/SSIS/">SSIS</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/SSIS/">SSIS</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/SQL/">SQL</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/uncategorized/">uncategorized</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ARM/" rel="tag">ARM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/AlwaysOn/" rel="tag">AlwaysOn</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-Lab/" rel="tag">Automated Lab</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-SQL-Install/" rel="tag">Automated SQL Install</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-SSMS/" rel="tag">Automated SSMS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automation/" rel="tag">Automation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure/" rel="tag">Azure</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Automation/" rel="tag">Azure Automation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Data-Factory/" rel="tag">Azure Data Factory</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Resource-Manager/" rel="tag">Azure Resource Manager</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cloud/" rel="tag">Cloud</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Credential/" rel="tag">Credential</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Current-SQL-Build/" rel="tag">Current SQL Build</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Custom-Integration-Runtime/" rel="tag">Custom Integration Runtime</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DSC/" rel="tag">DSC</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DSC-at-Scale/" rel="tag">DSC at Scale</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Desired-State-Configuration/" rel="tag">Desired State Configuration</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DevOps/" rel="tag">DevOps</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HyperV-Lab/" rel="tag">HyperV Lab</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Key-Vault/" rel="tag">Key Vault</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LabinaBox/" rel="tag">LabinaBox</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Manged-Instance/" rel="tag">Manged Instance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Migration/" rel="tag">Migration</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PowerShell/" rel="tag">PowerShell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL/" rel="tag">SQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Container/" rel="tag">SQL Container</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Linux/" rel="tag">SQL Linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Server/" rel="tag">SQL Server</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSIS/" rel="tag">SSIS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSMS-Install/" rel="tag">SSMS Install</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Secure-Login/" rel="tag">Secure Login</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/TDE/" rel="tag">TDE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Testing-Environement/" rel="tag">Testing Environement</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/ARM/" style="font-size: 13.33px;">ARM</a> <a href="/tags/AlwaysOn/" style="font-size: 13.33px;">AlwaysOn</a> <a href="/tags/Automated-Lab/" style="font-size: 10px;">Automated Lab</a> <a href="/tags/Automated-SQL-Install/" style="font-size: 15px;">Automated SQL Install</a> <a href="/tags/Automated-SSMS/" style="font-size: 10px;">Automated SSMS</a> <a href="/tags/Automation/" style="font-size: 11.67px;">Automation</a> <a href="/tags/Azure/" style="font-size: 11.67px;">Azure</a> <a href="/tags/Azure-Automation/" style="font-size: 10px;">Azure Automation</a> <a href="/tags/Azure-Data-Factory/" style="font-size: 10px;">Azure Data Factory</a> <a href="/tags/Azure-Resource-Manager/" style="font-size: 10px;">Azure Resource Manager</a> <a href="/tags/Cloud/" style="font-size: 10px;">Cloud</a> <a href="/tags/Credential/" style="font-size: 10px;">Credential</a> <a href="/tags/Current-SQL-Build/" style="font-size: 10px;">Current SQL Build</a> <a href="/tags/Custom-Integration-Runtime/" style="font-size: 10px;">Custom Integration Runtime</a> <a href="/tags/DSC/" style="font-size: 20px;">DSC</a> <a href="/tags/DSC-at-Scale/" style="font-size: 10px;">DSC at Scale</a> <a href="/tags/Desired-State-Configuration/" style="font-size: 16.67px;">Desired State Configuration</a> <a href="/tags/DevOps/" style="font-size: 10px;">DevOps</a> <a href="/tags/HyperV-Lab/" style="font-size: 10px;">HyperV Lab</a> <a href="/tags/Key-Vault/" style="font-size: 10px;">Key Vault</a> <a href="/tags/LabinaBox/" style="font-size: 10px;">LabinaBox</a> <a href="/tags/Manged-Instance/" style="font-size: 10px;">Manged Instance</a> <a href="/tags/Migration/" style="font-size: 10px;">Migration</a> <a href="/tags/PowerShell/" style="font-size: 13.33px;">PowerShell</a> <a href="/tags/SQL/" style="font-size: 13.33px;">SQL</a> <a href="/tags/SQL-Container/" style="font-size: 10px;">SQL Container</a> <a href="/tags/SQL-Linux/" style="font-size: 10px;">SQL Linux</a> <a href="/tags/SQL-Server/" style="font-size: 18.33px;">SQL Server</a> <a href="/tags/SSIS/" style="font-size: 10px;">SSIS</a> <a href="/tags/SSMS-Install/" style="font-size: 10px;">SSMS Install</a> <a href="/tags/Secure-Login/" style="font-size: 10px;">Secure Login</a> <a href="/tags/TDE/" style="font-size: 10px;">TDE</a> <a href="/tags/Testing-Environement/" style="font-size: 10px;">Testing Environement</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/07/">July 2021</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/08/">August 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/03/">March 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/10/">October 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/08/">August 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/05/">May 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/01/">January 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/11/">November 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/09/">September 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">August 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/06/">June 2015</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2021/07/07/automated-oracle-infrastructure-as-code-in-azure/">Oracle Infrastructure as Code in Azure</a>
+          </li>
+        
+          <li>
+            <a href="/2020/08/16/azure-devops-for-the-data-engineer-part-2/">Azure DevOps for the Data Engineer Part 2</a>
+          </li>
+        
+          <li>
+            <a href="/2020/08/10/azure-devops-for-the-data-engineer-part-1/">Azure DevOps for the Data Engineer Part 1</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/31/default-kit/">Default Kit</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/19/moving-databases-with-tde-to-azure-sql-managed-instance/">Moving Databases with TDE to Azure SQL Managed Instance</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2021 Troy Ault<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>

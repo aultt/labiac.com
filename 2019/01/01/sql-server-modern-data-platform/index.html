@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>SQL Server Modern Data Platform | Automation One Day at a Time</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="Are you looking to modernize your data platform? Do you have need to quickly get off a version of SQL Server which is approaching end of life? Today I am going to walk through through the different op">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SQL Server Modern Data Platform">
+<meta property="og:url" content="http://example.com/2019/01/01/sql-server-modern-data-platform/index.html">
+<meta property="og:site_name" content="Automation One Day at a Time">
+<meta property="og:description" content="Are you looking to modernize your data platform? Do you have need to quickly get off a version of SQL Server which is approaching end of life? Today I am going to walk through through the different op">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/wp-content/uploads/2019/01/SQL-Lifecycle-1-1024x491.png">
+<meta property="og:image" content="http://example.com/wp-content/uploads/2019/01/AzureSQLDB-1024x369.png">
+<meta property="og:image" content="http://example.com/wp-content/uploads/2019/01/PaasBenefits-3-1024x413.png">
+<meta property="article:published_time" content="2019-01-01T21:52:55.000Z">
+<meta property="article:modified_time" content="2021-10-22T17:39:12.129Z">
+<meta property="article:author" content="Troy Ault">
+<meta property="article:tag" content="SQL Server">
+<meta property="article:tag" content="Azure">
+<meta property="article:tag" content="Cloud">
+<meta property="article:tag" content="Migration">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/wp-content/uploads/2019/01/SQL-Lifecycle-1-1024x491.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Automation One Day at a Time" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/typeface-source-code-pro@0.0.71/index.min.css">
+
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Automation One Day at a Time</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-sql-server-modern-data-platform" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/01/01/sql-server-modern-data-platform/" class="article-date">
+  <time class="dt-published" datetime="2019-01-01T21:52:55.000Z" itemprop="datePublished">2019-01-01</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/SQL-Server/">SQL Server</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      SQL Server Modern Data Platform
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>Are you looking to modernize your data platform? Do you have need to quickly get off a version of SQL Server which is approaching end of life? Today I am going to walk through through the different options and help you determine how you will run SQL Server in the future.</p>
+<p>Before we talk about how will will run SQL Server in the future lets look back over the evolution.</p>
+<p><img src="/wp-content/uploads/2019/01/SQL-Lifecycle-1-1024x491.png"></p>
+<p>We can see very easily now that SQL Server release cycles are shorter and there is a lot of focus on SQL Server running in the cloud. In fact, SQL Server running in Azure is what is allowing the quicker release cycles. Customers are providing feedback during preview releases allowing for a faster and better product to be released. Knowing release cycles are shorter, we need to adapt how we are deploying so we can do so with shorter time and greater precision. We will cover how we can achieve both of these in the follow up posts on automation. Before we move off to automation, we need to understand all the different options we have available.</p>
+<p>When we talk about running SQL Server, we have three different deployment models we can leverage:</p>
+<ul>
+<li>  PaaS - Platform as a Service</li>
+<li>  IaaS - Infrastructure as a Service</li>
+<li>  Physical Server Deployment</li>
+</ul>
+<p>As DBA’s, it’s an added benefit that across all three deployment models the data platform is consistent regardless if it is on-prem or in the cloud.</p>
+<p>Let’s talk about PaaS solutions first. Within Azure we have several PaaS Deployment offers. All PaaS offers for SQL Server fall under the Azure SQL Database umbrella. Within Azure SQL Database we currently have three options depicted below.</p>
+<p><img src="/wp-content/uploads/2019/01/AzureSQLDB-1024x369.png"></p>
+<p>We call this Platform as a Service. You may ask yourself what does that mean or what does that buy me? The answer is a lot! For one, you never need to migrate again or patch. How many countless hours have DBA’s over the years spent in just these two areas? But there is more than that, we have BuiltIn-HA and Business Continuity out of the box. Do you have workloads that change from week to week or month to month? We have you covered because you can resize on the fly as well. Platform as a Service provides many advantages. Below is an image depicting them.</p>
+<p><img src="/wp-content/uploads/2019/01/PaasBenefits-3-1024x413.png"></p>
+<p>Now we understand what PaaS offers us. Next we need to understand the different purchasing models within the Azure SQL Database offering. There are two different purchasing models, vCore and DTU, of which there are different Service Tiers.</p>
+<p><strong>DTU-based Purchase Model</strong><br>What is a DTU you ask?  </p>
+<p>A [Database Transaction Unit] is a blended measure of CPU, memory, data I/O, and transaction log I/O in a ratio determined by an OLTP benchmark workload designed to be typical of real-world OLTP workloads. Doubling the DTUs by increasing the performance level of a database equates to doubling the set of resource available to that database.</p>
+<p>Now we know what a DTU is, let’s talk about the different Service tiers. There are three tiers: Basic, Standard, and Premium. All three tiers will provide 99.99% uptime. The differences comes with the blended ratio of resources you get. Microsoft provides a break down of the differences <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/sql-database/sql-database-service-tiers-dtu">here</a>.</p>
+<p><strong>vCore-based Purchase Model</strong></p>
+<p>The vCore model allows you to independently scale, compute and storage. This model will feel very similar to how you have managed your on-prem SQL environments. In addition, with vCore you have the ability to exchange your existing SQL licenses.</p>
+<p>Within the vCore model, we have different generations of Hardware we can select from as well as different service tiers.  </p>
+<p><em>Gen 4</em> - up to 24 logical CPUs on Haswell processors. vCore = 1 Physical Core 7GB of memory per core, attached SSD<br><em>Gen 5</em> - up to 80 logical CPUS on Broadwell processors. vCore = 1 Hyper-thread. 5.5GB of memory per core, fast eNVM SSD</p>
+<p><strong>vCore Service tiers</strong><br><em>General Purpose</em> : Premium remote storage, database size 5GB - 4TB<br><em>Business Critical</em>: Local SSD storage, database size 5GB - 1TB<br><em>Hyperscale (Preview)</em>: Autogrow of storage as needed. Supports up to 100TB storage and beyond. Local SSD for local buffer pool cache and local data storage.</p>
+<p>Full details on vCore as well as information on Azure Hybrid Benefit can be found <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/sql-database/sql-database-service-tiers-vcore">here</a>.</p>
+<p>All of the above correspond to Azure SQL DB in Single, Elastic Pool and Managed Instance with the exception of there is no DTU model for Managed Instance.</p>
+<p>Now we have covered all the different Deployment, Purchasing and Service Tiers available for SQL Server in Azure. How do we go about determining which flavor we want to deploy? The first thing I would check for within an application is whether it is a vendor application or home grown application? If it’s vendor, check vendor for supported SQL version and cloud db compatibility. Once you answer this, the next step is to leverage Database Migration Assistant (DMA) against each source. If you are unfamiliar with DMA, it’s a tool which helps you upgrade to modern data platform by detecting compatibility issues. Additional information and download information can be found <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/sql/dma/dma-overview?view=sql-server-2017">here</a>. Within DMA, you can check targets of SQL 2012 -2017 and Azure SQL Db and Azure SQL Managed Instance.</p>
+<p>After we have run DMA and know of any compatibility issues, then we can determine our options. We can look to adapt our application to fit into the the destination we prefer or fall down the stack. When I refer to stack, I tell customers to first look at Azure SQL Database Singleton or Elastic Pool first as it has the least amount of maintenance effort required. If your application does not fit this model, then look to Azure SQL Managed Instance which is very close to on-prem SQL. And finally, if you are unable to leverage SQL Managed Instance then look to run SQL on IaaS. Even though you may need to fall to IaaS for your SQL Server implementation, this doesn’t mean you have to lose all of the benefits of PaaS. Within IaaS, you can still leverage Desired State Configuration(DSC) to ensure you have a consistent build that doesn’t drift over time. If you aren’t familiar with DSC, then look through some of my previous posts to understand what it has to offer. Now we have talked about the different options for deploying SQL Server in Azure, the last thing I want to cover are the differences in Azure SQL Managed Instance and on-prem SQL Server.</p>
+<p>Azure SQL Managed Instance has near 100% features of SQL Server and provides native virtual network(VNET) implementation which address common security concerns. So what features doesn’t Managed Instance have?</p>
+<ol>
+<li><strong>Features obsolete in the cloud (or have a better alternative)</strong><ul>
+<li>  AlwaysOn Availability: Groups HA is built in</li>
+<li>  Windows Authentication: Azure Active Directory is the alternative</li>
+<li>  Management Data Warehouse: Azure Monitor is the alternative</li>
+<li>  Policy Based Management: common DBA tasks are performed by SQL Database</li>
+</ul>
+</li>
+<li><strong>Features retired</strong><ul>
+<li>  Database Mirroring: builtin HA/geo-replication better alternatives</li>
+<li>  Extended stored procedures: customers should use CLR</li>
+</ul>
+</li>
+<li><strong>Features considered Post-GA</strong><ul>
+<li>  Filestream</li>
+<li>  Filetable</li>
+<li>  Cross-instance distributed transactions (As well as transactions which require MS DTC)</li>
+<li>  Data Quality Services (DQS)</li>
+<li>  Master Data Services (MDS)</li>
+<li>  Stretch Database</li>
+</ul>
+</li>
+</ol>
+<p>After reading this article, hopefully you are more informed about the options which exist for deploying SQL Server. The next step is automating these deployments. The most challenging automation is around the IaaS implementations so that is where I will begin and assist you in your journey. Over the next couple of Blog posts, I will cover SQL Server Single Server Deployment in Azure VM, SQL AlwaysOn Deployment, and SQL Server FailoverCluster Deployment. I will provide you with configurable Azure Resource Manager (ARM) templates to allow you to quickly and reliably deploy your infrastructure. Until then, happy automating!</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2019/01/01/sql-server-modern-data-platform/" data-id="ckv2nrjlt002op8ii8aaiejx2" data-title="SQL Server Modern Data Platform" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Azure/" rel="tag">Azure</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Cloud/" rel="tag">Cloud</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Migration/" rel="tag">Migration</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SQL-Server/" rel="tag">SQL Server</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/01/02/automating-sql-server-in-azure-with-azure-resource-managerarm/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          Automating SQL Server in Azure with Azure Resource Manager(ARM)
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2017/10/20/desired-state-configurationdsc-for-sql-server-update-2/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Desired State Configuration(DSC) for SQL Server ***Update 2</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/About-Me/">About Me</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/AlwaysOn/">AlwaysOn</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Authentication/">Authentication</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Azure/">Azure</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Container/">Container</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/DSC/">DSC</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Lab/">Lab</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/SQL-Server/">SQL Server</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/">azure</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/">Azure Data Factory</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/Logic-App/">Logic App</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/Logic-App/SSIS/">SSIS</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/SSIS/">SSIS</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/SQL/">SQL</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/uncategorized/">uncategorized</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ARM/" rel="tag">ARM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/AlwaysOn/" rel="tag">AlwaysOn</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-Lab/" rel="tag">Automated Lab</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-SQL-Install/" rel="tag">Automated SQL Install</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-SSMS/" rel="tag">Automated SSMS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automation/" rel="tag">Automation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure/" rel="tag">Azure</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Automation/" rel="tag">Azure Automation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Data-Factory/" rel="tag">Azure Data Factory</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Resource-Manager/" rel="tag">Azure Resource Manager</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cloud/" rel="tag">Cloud</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Credential/" rel="tag">Credential</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Current-SQL-Build/" rel="tag">Current SQL Build</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Custom-Integration-Runtime/" rel="tag">Custom Integration Runtime</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DSC/" rel="tag">DSC</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DSC-at-Scale/" rel="tag">DSC at Scale</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Desired-State-Configuration/" rel="tag">Desired State Configuration</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DevOps/" rel="tag">DevOps</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HyperV-Lab/" rel="tag">HyperV Lab</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Key-Vault/" rel="tag">Key Vault</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LabinaBox/" rel="tag">LabinaBox</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Manged-Instance/" rel="tag">Manged Instance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Migration/" rel="tag">Migration</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PowerShell/" rel="tag">PowerShell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL/" rel="tag">SQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Container/" rel="tag">SQL Container</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Linux/" rel="tag">SQL Linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Server/" rel="tag">SQL Server</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSIS/" rel="tag">SSIS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSMS-Install/" rel="tag">SSMS Install</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Secure-Login/" rel="tag">Secure Login</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/TDE/" rel="tag">TDE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Testing-Environement/" rel="tag">Testing Environement</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/ARM/" style="font-size: 13.33px;">ARM</a> <a href="/tags/AlwaysOn/" style="font-size: 13.33px;">AlwaysOn</a> <a href="/tags/Automated-Lab/" style="font-size: 10px;">Automated Lab</a> <a href="/tags/Automated-SQL-Install/" style="font-size: 15px;">Automated SQL Install</a> <a href="/tags/Automated-SSMS/" style="font-size: 10px;">Automated SSMS</a> <a href="/tags/Automation/" style="font-size: 11.67px;">Automation</a> <a href="/tags/Azure/" style="font-size: 11.67px;">Azure</a> <a href="/tags/Azure-Automation/" style="font-size: 10px;">Azure Automation</a> <a href="/tags/Azure-Data-Factory/" style="font-size: 10px;">Azure Data Factory</a> <a href="/tags/Azure-Resource-Manager/" style="font-size: 10px;">Azure Resource Manager</a> <a href="/tags/Cloud/" style="font-size: 10px;">Cloud</a> <a href="/tags/Credential/" style="font-size: 10px;">Credential</a> <a href="/tags/Current-SQL-Build/" style="font-size: 10px;">Current SQL Build</a> <a href="/tags/Custom-Integration-Runtime/" style="font-size: 10px;">Custom Integration Runtime</a> <a href="/tags/DSC/" style="font-size: 20px;">DSC</a> <a href="/tags/DSC-at-Scale/" style="font-size: 10px;">DSC at Scale</a> <a href="/tags/Desired-State-Configuration/" style="font-size: 16.67px;">Desired State Configuration</a> <a href="/tags/DevOps/" style="font-size: 10px;">DevOps</a> <a href="/tags/HyperV-Lab/" style="font-size: 10px;">HyperV Lab</a> <a href="/tags/Key-Vault/" style="font-size: 10px;">Key Vault</a> <a href="/tags/LabinaBox/" style="font-size: 10px;">LabinaBox</a> <a href="/tags/Manged-Instance/" style="font-size: 10px;">Manged Instance</a> <a href="/tags/Migration/" style="font-size: 10px;">Migration</a> <a href="/tags/PowerShell/" style="font-size: 13.33px;">PowerShell</a> <a href="/tags/SQL/" style="font-size: 13.33px;">SQL</a> <a href="/tags/SQL-Container/" style="font-size: 10px;">SQL Container</a> <a href="/tags/SQL-Linux/" style="font-size: 10px;">SQL Linux</a> <a href="/tags/SQL-Server/" style="font-size: 18.33px;">SQL Server</a> <a href="/tags/SSIS/" style="font-size: 10px;">SSIS</a> <a href="/tags/SSMS-Install/" style="font-size: 10px;">SSMS Install</a> <a href="/tags/Secure-Login/" style="font-size: 10px;">Secure Login</a> <a href="/tags/TDE/" style="font-size: 10px;">TDE</a> <a href="/tags/Testing-Environement/" style="font-size: 10px;">Testing Environement</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/07/">July 2021</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/08/">August 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/03/">March 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/10/">October 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/08/">August 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/05/">May 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/01/">January 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/11/">November 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/09/">September 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">August 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/06/">June 2015</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2021/07/07/automated-oracle-infrastructure-as-code-in-azure/">Oracle Infrastructure as Code in Azure</a>
+          </li>
+        
+          <li>
+            <a href="/2020/08/16/azure-devops-for-the-data-engineer-part-2/">Azure DevOps for the Data Engineer Part 2</a>
+          </li>
+        
+          <li>
+            <a href="/2020/08/10/azure-devops-for-the-data-engineer-part-1/">Azure DevOps for the Data Engineer Part 1</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/31/default-kit/">Default Kit</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/19/moving-databases-with-tde-to-azure-sql-managed-instance/">Moving Databases with TDE to Azure SQL Managed Instance</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2021 Troy Ault<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>

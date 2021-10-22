@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>Lift and Shift SSIS to Azure | Automation One Day at a Time</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="With SQL Server 2008 end of life around the corner, July 9 2019 for those not aware, many companies are looking to lift and shift their SQL environments to the cloud. In doing so, most companies are l">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Lift and Shift SSIS to Azure">
+<meta property="og:url" content="http://example.com/2019/03/08/lift-and-shift-ssis-to-azure/index.html">
+<meta property="og:site_name" content="Automation One Day at a Time">
+<meta property="og:description" content="With SQL Server 2008 end of life around the corner, July 9 2019 for those not aware, many companies are looking to lift and shift their SQL environments to the cloud. In doing so, most companies are l">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/wp-content/uploads/2019/03/image-1-1024x294.png">
+<meta property="og:image" content="https://troyault.com/wp-content/uploads/2019/03/image-2.png">
+<meta property="og:image" content="https://troyault.com/wp-content/uploads/2019/03/image-4.png">
+<meta property="og:image" content="https://troyault.com/wp-content/uploads/2019/03/image-5.png">
+<meta property="og:image" content="https://troyault.com/wp-content/uploads/2019/03/image-6.png">
+<meta property="og:image" content="https://troyault.com/wp-content/uploads/2019/03/image-8.png">
+<meta property="og:image" content="https://troyault.com/wp-content/uploads/2019/03/image-9.png">
+<meta property="article:published_time" content="2019-03-08T22:08:07.000Z">
+<meta property="article:modified_time" content="2021-10-22T17:39:12.133Z">
+<meta property="article:author" content="Troy Ault">
+<meta property="article:tag" content="Azure Data Factory">
+<meta property="article:tag" content="Custom Integration Runtime">
+<meta property="article:tag" content="SSIS">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/wp-content/uploads/2019/03/image-1-1024x294.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Automation One Day at a Time" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/typeface-source-code-pro@0.0.71/index.min.css">
+
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Automation One Day at a Time</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-lift-and-shift-ssis-to-azure" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/03/08/lift-and-shift-ssis-to-azure/" class="article-date">
+  <time class="dt-published" datetime="2019-03-08T22:08:07.000Z" itemprop="datePublished">2019-03-08</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Azure/">Azure</a>►<a class="article-category-link" href="/categories/azure/">azure</a>►<a class="article-category-link" href="/categories/azure/Azure-Data-Factory/">Azure Data Factory</a>►<a class="article-category-link" href="/categories/azure/Azure-Data-Factory/SSIS/">SSIS</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      Lift and Shift SSIS to Azure
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>With SQL Server 2008 end of life around the corner, July 9 2019 for those not aware, many companies are looking to lift and shift their SQL environments to the cloud. In doing so, most companies are looking for the opportunity to move to Platform as a Service (PaaS) because of the savings.</p>
+<p>When we talk lift and shift of data, most times my discussions have been around moving SQL Server to Azure SQL Managed Instance. What about the other services which companies have leveraged for years on-prem? One of the services being SSIS which many companies have invested time and resources developing data flows. Luckily, these can be fairly easily lifted and shifted in in Azure with minimal or no code changes. Within this blog post I will discuss many of the steps required to configure the SSIS runtime, but more importantly, I will call out all the references to the official documentation for each component.</p>
+<p>First thing that will be required is SSIS integration runtime. With the integration run time, we can leverage Azure SQL Database Server or Managed Instance to deploy our SSISDB. Is the concept of Integration runtime(IR) in Azure Data Factory a a new one to you? If so, then take a look at the following <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/data-factory/concepts-integration-runtime">documentation</a> which details all the different IR types available. A brief description of SSIS IR is the following taken from the documentation referenced above:</p>
+<p>Azure-SSIS IR is a fully managed cluster of Azure VMs dedicated to run your SSIS packages. You can bring your own Azure SQL Database or Managed Instance server to host the catalog of SSIS projects/packages (SSISDB) that is going to be attached to it. You can scale up the power of the compute by specifying node size and scale it out by specifying the number of nodes in the cluster. You can manage the cost of running your Azure-SSIS Integration Runtime by stopping and starting it as you see fit.</p>
+<p>Creating the SSIS IR is <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/data-factory/create-azure-ssis-integration-runtime">documented</a> very well for both deploying through the portal, PowerShell, or via Azure Resource Manager template. Depending on what your packages utilize you may need to do some custom configuration of the SSIS IR. <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/data-factory/how-to-configure-azure-ssis-ir-custom-setup">Documentation</a> around limitations and considerations should be reviewed. Custom setup lets you alter the default operating configuration or environment (for example, to start additional Windows services or persist access credentials for file shares) or install additional components (for example, assemblies, drivers, or extensions) on each node of your Azure-SSIS IR.</p>
+<p>The example I ran into recently was leveraging windows files shares within a package. If the SSIS package is relatively small, then updating file shares and changing them over to a URL to a blob store may be simple. However, if the package has many references to UNC paths changing, then these could be time consuming and require much regression testing. Luckily the steps to prevent this work is relatively easy.</p>
+<p><a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/sql/integration-services/lift-shift/ssis-azure-connect-with-windows-auth?view=sql-server-2017">Documentation</a> exists for connecting data sources and file shares with SSIS packages in Azure, however, for my specific example it wasn’t crystal clear the steps that were required. So I’m documenting here in hopes it will save others some time. In order to move forward, you will need an already configured SSIS IR and a storage account with files shares. We covered SSIS IR earlier in this post. If you need assistance in creating the storage account and file share, then there is a nice walkthrough which can be found <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/storage/files/storage-files-quick-create-use-windows">here</a>. Ensure you have a blob container created and a file share.</p>
+<p>Now we have our pre-reqs we can move to our custom configuration of our SSIS IR. We need to collect some information from our file share, specifically the username and key. To do this, navigate to the storage account, select Files, then select the file share you created. Next click Connect as shown below.</p>
+<p><img src="/wp-content/uploads/2019/03/image-1-1024x294.png"></p>
+<p>After selecting this you will be presented with options for Windows, Linux, and MacOS. For our purposes we just need the UNC path, the user name, and the key. I have cleared out my storage key but show both the others below.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/03/image-2.png"></p>
+<p>Once we have these three then we can now move to create a main.cmd file which will be called by the SSIS IR. Below you will see the contents of our file. You will want to replace the with your URL, user, and pass. you obtained above. Save this file as we will upload it to our blob store next.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/03/image-4.png"></p>
+<p>Next we need to upload our main.cmd file to the container we created in our blob store. Navigate to this container and upload the file. Once you have uploaded the file, we then need to create a Shared access signature. The easiest way to do this is using Azure Storage Explorer. You can easily launch it by going to the overview of the storage account and clicking Open In Explorer.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/03/image-5.png"></p>
+<p>If you don’t have Azure Storage Explorer downloaded, then it will provide a link for you to download it. If you do, then you can launch it directly from the portal. Once storage explorer is opened you will need to connect to your azure subscription and browse to your storage account. Right click on the storage container and select Get Shared Access Signature.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/03/image-6.png"></p>
+<p>Ensure you grant Read, Write, and List permissions for the signature. You will want to consider how long this Signature should be valid. Once this expires you will need to reconfigure your SSIS IR. Whatever you decide, make a note and a reminder on your calendar to update it once it expires. Once you click Create you will be presented with the URL and Query string. Copy both and store for later.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/03/image-8.png"></p>
+<p>Finally we are ready to configure our custom SSIS IR and then start it up. To make this easier, I have provided a PowerShell script that you will need to update four variables at the top of the script and then execute it. The script is available on my GitHub account and its name is <a target="_blank" rel="noopener" href="https://github.com/aultt/ProofOfConcepts/tree/master/SanitizeDBandUploadToAzure/PowerShell">ReconfigureSSISIR.ps1.</a> Download the PowerShell script and update the following variables at the top of the script $MyDataFactoryName , $MyAzureSsisIrName, $MyResourceGroupName, $MySetupScriptContainerSasUri. MySetupScriptContainerSasUri is the URL you copied from the previous step.</p>
+<p>You have now successfully configured your SSIS IR with a custom configuration which will allow your packages to reference a UNC path. Your package variables will now reference any file within the File Share as below. No credential are required because the custom configuration handles the authentication. If you haven’t deployed the package already then deploy the package to SSIS DB. You can now execute the package directly from SSIS DB catalog or create an ADF pipeline to execute the package.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/03/image-9.png"></p>
+<p>This concludes our custom configuration of the SSIS runtime, however, I would like to point out a few other things which may come up as a need as your are lifting your packages into Azure.</p>
+<p>If you have the need to copy files from your on-prem datacenter into Azure, then you will need to also have a <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/data-factory/create-self-hosted-integration-runtime">self-hosted integration runtime.</a> This is a very easy setup, just requires downloading an MSI and installing it on an existing server. Something to consider if you are moving files to an azure storage and you have configured <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/storage/common/storage-network-security">Azure Storage Firewalls</a>, then you will want to ensure your self-hosted integration runtime resides on a virtual machine running in a Vnet/subnet which is permitted through the firewall.</p>
+<p>Two addition links I would like to provide you in case you find the need to <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/data-factory/concepts-pipeline-execution-triggers">call an Azure Data factory Pipeline through code</a> or <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/data-factory/how-to-schedule-azure-ssis-integration-runtime">schedule start and stop of SSIS IR</a>.</p>
+<p>Hopefully someone will save some time and frustration with the resources here today or at least utilize it for reference for the underlying articles. Happy Automating!</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2019/03/08/lift-and-shift-ssis-to-azure/" data-id="ckv2nrjlp0025p8iie0mwccre" data-title="Lift and Shift SSIS to Azure" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Azure-Data-Factory/" rel="tag">Azure Data Factory</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Custom-Integration-Runtime/" rel="tag">Custom Integration Runtime</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SSIS/" rel="tag">SSIS</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/07/18/cpw-personal-website/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          About
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/01/15/automating-sql-server-in-azure-with-azure-resource-manager-arm-part-3/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Automating SQL Server in Azure with Azure Resource Manager (ARM) **Part 3**</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/About-Me/">About Me</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/AlwaysOn/">AlwaysOn</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Authentication/">Authentication</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Azure/">Azure</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Container/">Container</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/DSC/">DSC</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Lab/">Lab</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/SQL-Server/">SQL Server</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/">azure</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/">Azure Data Factory</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/Logic-App/">Logic App</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/Logic-App/SSIS/">SSIS</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/SSIS/">SSIS</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/SQL/">SQL</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/uncategorized/">uncategorized</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ARM/" rel="tag">ARM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/AlwaysOn/" rel="tag">AlwaysOn</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-Lab/" rel="tag">Automated Lab</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-SQL-Install/" rel="tag">Automated SQL Install</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-SSMS/" rel="tag">Automated SSMS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automation/" rel="tag">Automation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure/" rel="tag">Azure</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Automation/" rel="tag">Azure Automation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Data-Factory/" rel="tag">Azure Data Factory</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Resource-Manager/" rel="tag">Azure Resource Manager</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cloud/" rel="tag">Cloud</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Credential/" rel="tag">Credential</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Current-SQL-Build/" rel="tag">Current SQL Build</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Custom-Integration-Runtime/" rel="tag">Custom Integration Runtime</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DSC/" rel="tag">DSC</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DSC-at-Scale/" rel="tag">DSC at Scale</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Desired-State-Configuration/" rel="tag">Desired State Configuration</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DevOps/" rel="tag">DevOps</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HyperV-Lab/" rel="tag">HyperV Lab</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Key-Vault/" rel="tag">Key Vault</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LabinaBox/" rel="tag">LabinaBox</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Manged-Instance/" rel="tag">Manged Instance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Migration/" rel="tag">Migration</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PowerShell/" rel="tag">PowerShell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL/" rel="tag">SQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Container/" rel="tag">SQL Container</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Linux/" rel="tag">SQL Linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Server/" rel="tag">SQL Server</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSIS/" rel="tag">SSIS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSMS-Install/" rel="tag">SSMS Install</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Secure-Login/" rel="tag">Secure Login</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/TDE/" rel="tag">TDE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Testing-Environement/" rel="tag">Testing Environement</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/ARM/" style="font-size: 13.33px;">ARM</a> <a href="/tags/AlwaysOn/" style="font-size: 13.33px;">AlwaysOn</a> <a href="/tags/Automated-Lab/" style="font-size: 10px;">Automated Lab</a> <a href="/tags/Automated-SQL-Install/" style="font-size: 15px;">Automated SQL Install</a> <a href="/tags/Automated-SSMS/" style="font-size: 10px;">Automated SSMS</a> <a href="/tags/Automation/" style="font-size: 11.67px;">Automation</a> <a href="/tags/Azure/" style="font-size: 11.67px;">Azure</a> <a href="/tags/Azure-Automation/" style="font-size: 10px;">Azure Automation</a> <a href="/tags/Azure-Data-Factory/" style="font-size: 10px;">Azure Data Factory</a> <a href="/tags/Azure-Resource-Manager/" style="font-size: 10px;">Azure Resource Manager</a> <a href="/tags/Cloud/" style="font-size: 10px;">Cloud</a> <a href="/tags/Credential/" style="font-size: 10px;">Credential</a> <a href="/tags/Current-SQL-Build/" style="font-size: 10px;">Current SQL Build</a> <a href="/tags/Custom-Integration-Runtime/" style="font-size: 10px;">Custom Integration Runtime</a> <a href="/tags/DSC/" style="font-size: 20px;">DSC</a> <a href="/tags/DSC-at-Scale/" style="font-size: 10px;">DSC at Scale</a> <a href="/tags/Desired-State-Configuration/" style="font-size: 16.67px;">Desired State Configuration</a> <a href="/tags/DevOps/" style="font-size: 10px;">DevOps</a> <a href="/tags/HyperV-Lab/" style="font-size: 10px;">HyperV Lab</a> <a href="/tags/Key-Vault/" style="font-size: 10px;">Key Vault</a> <a href="/tags/LabinaBox/" style="font-size: 10px;">LabinaBox</a> <a href="/tags/Manged-Instance/" style="font-size: 10px;">Manged Instance</a> <a href="/tags/Migration/" style="font-size: 10px;">Migration</a> <a href="/tags/PowerShell/" style="font-size: 13.33px;">PowerShell</a> <a href="/tags/SQL/" style="font-size: 13.33px;">SQL</a> <a href="/tags/SQL-Container/" style="font-size: 10px;">SQL Container</a> <a href="/tags/SQL-Linux/" style="font-size: 10px;">SQL Linux</a> <a href="/tags/SQL-Server/" style="font-size: 18.33px;">SQL Server</a> <a href="/tags/SSIS/" style="font-size: 10px;">SSIS</a> <a href="/tags/SSMS-Install/" style="font-size: 10px;">SSMS Install</a> <a href="/tags/Secure-Login/" style="font-size: 10px;">Secure Login</a> <a href="/tags/TDE/" style="font-size: 10px;">TDE</a> <a href="/tags/Testing-Environement/" style="font-size: 10px;">Testing Environement</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/07/">July 2021</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/08/">August 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/03/">March 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/10/">October 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/08/">August 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/05/">May 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/01/">January 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/11/">November 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/09/">September 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">August 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/06/">June 2015</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2021/07/07/automated-oracle-infrastructure-as-code-in-azure/">Oracle Infrastructure as Code in Azure</a>
+          </li>
+        
+          <li>
+            <a href="/2020/08/16/azure-devops-for-the-data-engineer-part-2/">Azure DevOps for the Data Engineer Part 2</a>
+          </li>
+        
+          <li>
+            <a href="/2020/08/10/azure-devops-for-the-data-engineer-part-1/">Azure DevOps for the Data Engineer Part 1</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/31/default-kit/">Default Kit</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/19/moving-databases-with-tde-to-azure-sql-managed-instance/">Moving Databases with TDE to Azure SQL Managed Instance</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2021 Troy Ault<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>

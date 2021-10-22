@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>Automation One Day at a Time</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta property="og:type" content="website">
+<meta property="og:title" content="Automation One Day at a Time">
+<meta property="og:url" content="http://example.com/index.html">
+<meta property="og:site_name" content="Automation One Day at a Time">
+<meta property="og:locale" content="en_US">
+<meta property="article:author" content="Troy Ault">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Automation One Day at a Time" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/typeface-source-code-pro@0.0.71/index.min.css">
+
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Automation One Day at a Time</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main">
+  
+    <article id="post-automated-oracle-infrastructure-as-code-in-azure" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2021/07/07/automated-oracle-infrastructure-as-code-in-azure/" class="article-date">
+  <time class="dt-published" datetime="2021-07-07T20:10:33.000Z" itemprop="datePublished">2021-07-07</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Azure/">Azure</a>►<a class="article-category-link" href="/categories/Lab/">Lab</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2021/07/07/automated-oracle-infrastructure-as-code-in-azure/">Oracle Infrastructure as Code in Azure</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>Are you looking to move Oracle workloads to Azure? Want to establish an Oracle development environment in Azure? Before getting started, I suggest you check out the following <a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=yoNZ_H2zOqk">video</a>. After watching the video, you will have a good understanding of all the things to consider when moving Oracle workloads to Azure.</p>
+<h2 id="Infrastructure-as-Code"><a href="#Infrastructure-as-Code" class="headerlink" title="Infrastructure as Code"></a>Infrastructure as Code</h2><p>Next, let’s discuss the tools we leverage for building out your first Oracle deployment. Terraform will deploy the infrastructure required while Ansible will be responsible for configuration of the virtual machine.</p>
+<h2 id="Architecture"><a href="#Architecture" class="headerlink" title="Architecture"></a>Architecture</h2><p>To isolate our environment the solution will deploy without any public endpoints. Since this is a stand along environment a new vnet is deployed which consists of three subnets. One subnet is leveraged for the virtual machine, another is leveraged key vault, and the final is utilized by Bastion. Key Vault will whitelist the public ip address of your machine to ensure you can connect after the deployment. See Architectural diagram below:</p>
+<p><img src="https://troyault.com/wp-content/uploads/2021/07/2021-07-07_15-37-18.png"></p>
+<h2 id="Problem-Statement"><a href="#Problem-Statement" class="headerlink" title="Problem Statement"></a>Problem Statement</h2><p>Before we dig into the specifics, let’s address the problem we are trying to solve. Today customers looking to move their Oracle workloads to Azure but don’ know where to start. Installing Oracle is a time consuming task. Often there are limited number of engineers with the background required to implement. Azure adds new VM sku’s regularly. As they are added we want to run stress tests with different size and number of disks to determine how they will perform. Automating the oracle deployment allows us to reduce time to deploy and provide a tool which could automatically test/validate a VM and disk configuration.</p>
+<h2 id="Approach"><a href="#Approach" class="headerlink" title="Approach"></a>Approach</h2><p>Let’s walk through my approach on solving the problem. Leveraging Terraform for the infrastructure portion allows us to provide variables and allow the deployment to be easily customized. As a result you have the capability to configure the vm size, number of disks, size of disks, and caching. Terraform allows us to define a variable file which allows a you to pass and quickly deploy a POC environment. Below is a simple flow diagram for the Terraform code.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2021/07/2021-07-07_08-26-24-1024x898.png"></p>
+<p>Once the terraform deployment has finished, you will need to complete one step. While this could be automated in the future or handled in a pipeline today, you need to kick off the script. First log into the VM with the Bastion Service, and the Key, which is stored in Key Vault. Next do an ls at the command prompt. Two files should exist, an ansible yml file which is the playbook, and a shell script which will deploy the playbook. Execute the playbook by typing . ./deployoracle.sh. The script should complete in approximately fifteen minutes. Once complete, the Oracle database will be configured with ASM and all the variables you defined. Below you will find a process flow of the Ansible Playbook.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2021/07/image-1.png"></p>
+<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p>Not alot has changed with the installation process since my last interaction with Oracle back in the 90’s. However, there are multiple steps and it’s easy to miss a step. Now that it is documented, hopefully my work will save you and others time and frustration. You can find the GitHub solution with the documentation and supporting files <a target="_blank" rel="noopener" href="https://github.com/aultt/Azure-Terraform-LabinaBox/tree/main/AppZone/Hub_Spoke/Single_Region/Oracle_Single">here</a>. As you look through the project if you have ideas for improvement please open an issue in GitHub. Thanks for reading and happy automating.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2021/07/07/automated-oracle-infrastructure-as-code-in-azure/" data-id="ckv2nrjkr0007p8ii89oe00sz" data-title="Oracle Infrastructure as Code in Azure" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-azure-devops-for-the-data-engineer-part-2" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/08/16/azure-devops-for-the-data-engineer-part-2/" class="article-date">
+  <time class="dt-published" datetime="2020-08-16T20:13:04.000Z" itemprop="datePublished">2020-08-16</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Azure/">Azure</a>►<a class="article-category-link" href="/categories/DSC/">DSC</a>►<a class="article-category-link" href="/categories/Lab/">Lab</a>►<a class="article-category-link" href="/categories/azure/">azure</a>►<a class="article-category-link" href="/categories/azure/SQL/">SQL</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/08/16/azure-devops-for-the-data-engineer-part-2/">Azure DevOps for the Data Engineer Part 2</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>Welcome back as we continue from our previous discussion, where we discussed deploying a domain controller in Azure with ARM and DevOps. If you missed it, read the previous <a target="_blank" rel="noopener" href="https://troyault.com/azure-devops-for-the-data-engineer-part-1/">blog post</a>. Here we will leverage two more ARM templates which I have published to my GitHub account. The first one is <a target="_blank" rel="noopener" href="https://github.com/aultt/DeveloperWorkstation">DeveloperWorkstation</a>.</p>
+<p>**Note to keep this post from becoming too long I will not cover creating the CI pipeline for the workstation and SQL Server. Please loop back to the previous post and follow the same steps.</p>
+<h3 id="Developer-Workstation"><a href="#Developer-Workstation" class="headerlink" title="Developer Workstation"></a>Developer Workstation</h3><p>This ARM template will create a virtual machine, place the machine in our domain which we created previously, set the time zone, and finally install all our development tools we will want to leverage in our lab. Currently, the DSC configuration script installs the following components:</p>
+<ol>
+<li> Azure Data Studio</li>
+<li> Plugins for Azure Data Studio for PowerShell and SQL Server admin</li>
+<li> AZcopy</li>
+<li> SQL Server Management Studio</li>
+<li> VSCode</li>
+<li> Plugins for VSCode for SQL Server and PowerShell</li>
+</ol>
+<p>Installation of the tools is done leveraging the DSC module for Chocolatey. Therefore, adding additional tools is simple.</p>
+<p>We will need to update our azuredeploy.parameters.json file as we did earlier for our domain template. Below is the minimal values you should update.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/08/image-11-1024x958.png"></p>
+<p>Number 2 is optional as you could leave your domain DemoLab.local, but you may want to change to something more relevant. Update these values, save the files off and commit to your personal repo.</p>
+<h3 id="SQL-Server-Stand-Alone"><a href="#SQL-Server-Stand-Alone" class="headerlink" title="SQL Server Stand Alone"></a>SQL Server Stand Alone</h3><p>Next, we will walk through our SQL Server ARM template which can be found in my GitHub and named <a target="_blank" rel="noopener" href="https://github.com/aultt/SQLServerSingle">SQLServerSingle</a>. If you have utilized any of my SQL Server templates in the past then you will find this familiar. There are a few minor changes which I have done. Looking through the DSC configuration script, you will find the template supports SQL Server from SQL 2016 through SQL 2019. Like our developer workstation the configuration will place our SQL Server in our domain, set our time zone, install SQL Server, set all best practices, and create an SPN for SQL Server. Wait did you say SPN? Yes, once this is all put together, we will have a fully functional lab environment which leverages Kerberos authentication. Now that we understand what our configuration will do, let’s look at the changes we need to make to our parameters file.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/08/image-12-873x1024.png"></p>
+<p>As before, number 3 is optional as this is the domain name. In this template there is one additional change which is needed as we now have a SQL Service account that we need to retrieve a password for. You can now save and publish all your code to your repo as we move to the final piece, the DevOps pipeline.</p>
+<h3 id="DevOps-Pipeline"><a href="#DevOps-Pipeline" class="headerlink" title="DevOps Pipeline"></a>DevOps Pipeline</h3><p>Finally, we have all the pieces together to build our first pipeline which will deploy a fully function lab environment. I decided to separate the DevOps pipelines out to their own repo, so head over to my GitHub and download <a target="_blank" rel="noopener" href="https://github.com/aultt/DevOpsSQLLab">DevOpsSQLLab</a>. Once you have forked the repo, open the azure-pipelines.yml file which is under the SQLServerSingeLab folder. You may ask why a folder? I will be adding additional pipelines here going forward as customers request or I find the need. Open the file in VSCode, notice unlike our last yml file we now have a stage line within our file. This allows us to set dependencies on one stage completing before another one starts. We are going to break this file into three sections. First section is stage DC.</p>
+<h4 id="Domain-Controller-Stage"><a href="#Domain-Controller-Stage" class="headerlink" title="Domain Controller Stage"></a>Domain Controller Stage</h4><p>You have options when editing this file, you can edit it directly in Visual Studio code if you like, however, you will have to know the project id and number which isn’t easy to determine. My preference is to open the file up within my DevOps pipeline and edit it directly in the pipline. Take a look below at the screenshot and I will explain why.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/08/image-13-1024x792.png"></p>
+<p>As you can see above, we have three sections under DC which should look similar to what we saw in our domain controller pipeline. Above each is a Settings title which shows up in our pipeline. If you click this, then DevOps will present a fly out to the right with drop downs for you to select the Project and Build Pipeline. Here you will select your DevOps Pipeline along with your Build pipelines associated with your domain controller. Once complete, click add and this will be added back to your YAML file.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/08/image-14.png"></p>
+<p>Continue to the next two items and modify the tasks as you did for the domain controller release pipeline previously. Once complete with each, click add and save back to the YAML file.</p>
+<h4 id="Workstation-Stage"><a href="#Workstation-Stage" class="headerlink" title="Workstation Stage"></a>Workstation Stage</h4><p>Next stage is workstation. Walk through and make the same changes as you did above clicking add each time you complete a task. There is something additional to note here. Since we are leveraging stages, we can now set dependencies. As depicted in the diagram below, we set a dependency on domain controller as we cannot add the machine to the domain if the domain does not exist.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/08/image-15-1024x741.png"></p>
+<h4 id="SQL-Server-Stage"><a href="#SQL-Server-Stage" class="headerlink" title="SQL Server Stage"></a>SQL Server Stage</h4><p>Finally, we are to our SQL Server stage. Follow the same process we have for the last two sections. Once complete, save your pipeline, give it a name, and run the pipeline.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/08/image-17-1024x688.png"></p>
+<p>After you run the pipeline you will get a graphical presentation of each stage of the pipeline. Below I show the pipeline once it has completed. Notice we get times for each stage of the pipeline, so we know how long each ran. Also take note workstation and SQL will not begin until DC has completed.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/08/image-16.png"></p>
+<h3 id="Wrapping-Up"><a href="#Wrapping-Up" class="headerlink" title="Wrapping Up"></a>Wrapping Up</h3><p>We now should have a fully functional lab environment for SQL Server. We can test any SQL Server functionality including Kerberos authentication. More importantly with our DevOps pipeline, we now have a YAML file we can work with to build even more complicated pipelines which have additional dependencies. For instance, think of multiregional environments where different components have dependencies on another resource. The possibilities are endless. Hopefully, you have found this exercise beneficial as always if you have questions add a comment or send me an email.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2020/08/16/azure-devops-for-the-data-engineer-part-2/" data-id="ckv2nrjl7000zp8iiff6jcf58" data-title="Azure DevOps for the Data Engineer Part 2" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-azure-devops-for-the-data-engineer-part-1" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/08/10/azure-devops-for-the-data-engineer-part-1/" class="article-date">
+  <time class="dt-published" datetime="2020-08-10T22:37:19.000Z" itemprop="datePublished">2020-08-10</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Azure/">Azure</a>►<a class="article-category-link" href="/categories/DSC/">DSC</a>►<a class="article-category-link" href="/categories/Lab/">Lab</a>►<a class="article-category-link" href="/categories/SQL-Server/">SQL Server</a>►<a class="article-category-link" href="/categories/azure/">azure</a>►<a class="article-category-link" href="/categories/azure/SQL/">SQL</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/08/10/azure-devops-for-the-data-engineer-part-1/">Azure DevOps for the Data Engineer Part 1</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>Working with customers, I often need to spin up environments to demo/test/validate different scenarios. In the past I have kept a Hyper-V lab which housed all the different versions of SQL. This became a management overhead to ensure they were up to date. In addition, the number of releases and the supported platforms continued to increase. Customers also are looking to move their data workloads to Azure and therefore are looking at ways to automate. In the past I developed ARM templates for most of the SQL Server scenarios to aid in this. Testing was painful and caused for these templates to become outdated over time. The answer is to put them into a pipeline to ensure there are not steps missed in the deployment. Unfortunately, I was unable to find documentation on how to implement an ARM template within an Azure DevOps pipeline.</p>
+<p>Therefore, I have worked through the process and would like to document for others and myself to reference later. My approach was to develop ARM templates which could be leveraged like Lego pieces to build out several different pipelines. The two pieces which will be used for all my SQL deployments are domain controller and workstation. For this post I will walk through the domain controller template, talk to what changes you will need to make, and show how you can build a simple DevOps pipeline to deploy it.</p>
+<h3 id="Setup-Dependencies"><a href="#Setup-Dependencies" class="headerlink" title="Setup Dependencies"></a><strong>Setup Dependencies</strong></h3><p>Let’s get started. First thing you will want to do is to fork the <a target="_blank" rel="noopener" href="https://github.com/aultt/DomainController">DomainController</a> repository. You will need to update a couple of the files before you are ready to deploy, however, first let’s walk through things you will need to have deployed in your Azure subscription before making file changes. You will want to deploy/verify each of the following, storage account, key vault, virtual network, before moving on to modifying files. Within your key vault you will want to create two Secrets, one for the domain admin password and one for the local admin password.</p>
+<p>Now that our prerequisites are complete let’s open the GitHub repository we downloaded and see what is included. After you have downloaded it, open the folder in Visual Studio Code. You will find the files which are shown in the picture below:</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/08/image.png"></p>
+<h3 id="DSC-Configuration-changes"><a href="#DSC-Configuration-changes" class="headerlink" title="DSC Configuration changes"></a>DSC Configuration changes</h3><p>First item on the list is the DSC folder. Within the folder we will find all the DSC modules we will leverage to build out our domain controller (DC) and DSC configuration file. If you aren’t familiar with Desired State Configuration (DSC) check out my earlier posts which walk through it in more detail. For this post we will walk through how to modify files to deploy your DC but won’t walk through how DSC does the work. Within the DSC folder the only file you will want to update is the Domain.ps1 file. Within this file there are users who are created for our environment.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/08/image-2.png"></p>
+<p>Above are the five items you may want to change, three domain users and a domain group. Two of the user accounts are for our SQL Server SQLSvc and SQLAgt. If you want these to be different just place the name you would like them to use instead. Third user is the user I leveraged for development and was added to the DBA group which is the fourth and fifth item to change.</p>
+<h3 id="Azure-Resource-Manager-Template"><a href="#Azure-Resource-Manager-Template" class="headerlink" title="Azure Resource Manager Template"></a>Azure Resource Manager Template</h3><h4 id="Modify-ARM-template"><a href="#Modify-ARM-template" class="headerlink" title="Modify ARM template"></a>Modify ARM template</h4><p>We now are ready to look at our ARM template and parameters file. Open up azuredeploy.json in Visual Studio Code. We have one line we need to update here, line 101 which is our artifacts location. Replace &lt;YOUR_STORAGE_ACCOUNT_NAME&gt; with your storage account name. Within in your storage account you will need to have a container created, in my case I created one called artifact. If you name your container differently please update it here as well.</p>
+<h4 id="Modify-ARM-Parameter-File"><a href="#Modify-ARM-Parameter-File" class="headerlink" title="Modify ARM Parameter File"></a>Modify ARM Parameter File</h4><p>Next lets open azuredeploy.parameters.json. This file holds all our parameters which are passed to our ARM template we just modified. You should review each parameter here but at a minimum you will need to update line 17, 31, 37, 40 46 and 49. Below each is described:</p>
+<p>17 &amp; 31 - Provide your subscription id, the resource group name where your key vault resides and your key vault name. Additionally, if you did not create your secret names as DomainAdmin and localadminPass update these to the corresponding secret name.</p>
+<p>37 - Enter the resource group name where your virtual network resides.</p>
+<p>40 - Enter your Vnet Name</p>
+<p>46 - Enter your Subnet Name</p>
+<p>49 - Replace &lt;YOUR_STORAGE_ACCOUNT_NAME&gt; with your storage account name and if your container is not artifact please update to the corresponding container name. _artifactsLocationSasToken on line 51 should not be modified.</p>
+<p>Aside from line 51, all other parameters can be modified to fit your needs. Line 51 is for SaS Token which we dynamically build and should not be modified.</p>
+<p>We have now modified all the files needed to call our template from a DevOps pipeline. Three additional files reside in our repository we haven’t yet discussed, DomainDeploy.ps1, azure-pipelines.yml, and azure-pipelines-release.yml.</p>
+<h4 id="Modify-Manual-Deployment-Script"><a href="#Modify-Manual-Deployment-Script" class="headerlink" title="Modify Manual Deployment Script"></a>Modify Manual Deployment Script</h4><p>DomainDeploy.ps1 can be leveraged to manually deploy your ARM template. This is often how I run the first couple of times to validate the DSC configuration. If you want to leverage this, you will want to look at the first four lines. $resourceGroupName and $resourceGroupLocation is the name of the resource group where the virtual machine and corresponding resources will be created. $templateFile and $templateParm should point to where you forked your repro locally.</p>
+<h3 id="Azure-DevOps-Pipeline"><a href="#Azure-DevOps-Pipeline" class="headerlink" title="Azure DevOps Pipeline"></a>Azure DevOps Pipeline</h3><p>azure-pipelines.yml defines our Azure DevOps pipeline. We will walk through modifying this in your environment. Before modifying the file, we first need to have a DevOps project. If you don’t have an existing one create a new project. Next click Pipelines.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/08/image-3.png"></p>
+<p>Then click New Pipeline. You will be presented a screen like below:</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/08/image-4.png"></p>
+<p>Your code needs to be associated with a repository to leverage DevOps, you can leverage an Azure Repos or one of the others listed above. Once you select your provider, you will be presented with your repos and will select the repo you are attaching this pipeline to.</p>
+<h4 id="Continuous-Integration-Pipeline"><a href="#Continuous-Integration-Pipeline" class="headerlink" title="Continuous Integration Pipeline"></a>Continuous Integration Pipeline</h4><p>After selecting the repo select existing Azure Pipelines YAML File and select azure-pipelines.yml. You will be presented with the following view:</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/08/image-5.png"></p>
+<p>Notice there are items which will need to be update below the red arrow. To update these, click the Settings where the error is pointing. An additional window will be displayed on the right for you to select these values as shown below:</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/08/image-6-1024x579.png"></p>
+<p>Select your Azure Subscription, Storage account and container name and click Add. Your CI pipeline is now ready to save and run. So, what did we just accomplish? Let’s walk through our CI pipeline. The first item in the file is trigger, notice it has a value of master, any time the master branch is updated Azure DevOps will kick off the pipeline and do the steps listed here. The remainder of the steps zip all the DSC modules and configuration script in a zip file, publish the artifacts to a container and then copy the zip file to our azure storage account so our ARM template can reference it. ARM templates which reference external files must be stored in some form of external storage today. Now that our CI pipeline is built, anytime we add a DSC module or update our DSC configuration the pipeline will zip them all and copy them to our storage account automatically.</p>
+<h4 id="Release-Pipeline"><a href="#Release-Pipeline" class="headerlink" title="Release Pipeline"></a>Release Pipeline</h4><p>The final script is azure-pipelines-release.yml which is our release pipeline. We will leverage this any time we want to deploy our pipeline, which in this case is our domain controller. Eventually we will have a release pipeline which deploys all the servers for our environment. Let’s look at our final file. As before, create a new pipeline, select your repository, select your repo, and then select azure-pipelines-release.yml. The diagram below depicts the file and the things you will need to modify.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/08/image-8-1024x755.png"></p>
+<p>First you will want to Click Settings above line 8 marked number 1. This will allow you to select the appropriate Project which will populate the project ID. Once your project is selected you can select the Build Pipeline which we created earlier, and the pipeline ID will be populated for you. Once complete click Add. **Task pulls artifacts local to build server.</p>
+<p>Next select Settings above line 17 marked number 4. This again will pull up another window for you to allow you to select the subscription the script will run against. After you select your subscription modify the inline script replacing the storage account name with your storage account name. Once complete click Add. **Task is a PowerShell task which will get a SASToken for our storage account, which allows DevOps to pass the token to the ARM template which is called next.</p>
+<p>Finally select Settings above line 28 marked number 7. Once this is pulled up select the Azure Resource Manager connection and the subscription. Once complete go to the Override template parameters and modify the VMName and Domain Name to match what you would like. Override parameters allow you to override anything which is provided in the azuredeploy.parameters.json file. Once complete click Add. **Task calls our ARM template and passes overrides and SAS token to kick off our deployment.</p>
+<h4 id="Deploy-Pipeline"><a href="#Deploy-Pipeline" class="headerlink" title="Deploy Pipeline"></a>Deploy Pipeline</h4><p>You can now Save and Run your DevOps pipeline. Once you run it will show the Status and Duration as below.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/08/image-9-1024x236.png"></p>
+<p>You have now successfully deployed a domain controller with a DevOps Pipeline. In my next Blog Post we will incorporate the workstation and SQL server with a Pipeline to put them all together.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2020/08/10/azure-devops-for-the-data-engineer-part-1/" data-id="ckv2nrjl5000up8iifxkj6a13" data-title="Azure DevOps for the Data Engineer Part 1" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Azure-Automation/" rel="tag">Azure Automation</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/DSC/" rel="tag">DSC</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/DevOps/" rel="tag">DevOps</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SQL-Server/" rel="tag">SQL Server</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-default-kit" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/07/31/default-kit/" class="article-date">
+  <time class="dt-published" datetime="2020-07-31T14:52:47.000Z" itemprop="datePublished">2020-07-31</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/uncategorized/">uncategorized</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/07/31/default-kit/">Default Kit</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2020/07/31/default-kit/" data-id="ckv2nrjlb001bp8ii5lie6k55" data-title="Default Kit" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-moving-databases-with-tde-to-azure-sql-managed-instance" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/01/19/moving-databases-with-tde-to-azure-sql-managed-instance/" class="article-date">
+  <time class="dt-published" datetime="2020-01-19T18:07:53.000Z" itemprop="datePublished">2020-01-19</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Azure/">Azure</a>►<a class="article-category-link" href="/categories/azure/">azure</a>►<a class="article-category-link" href="/categories/azure/SQL/">SQL</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/01/19/moving-databases-with-tde-to-azure-sql-managed-instance/">Moving Databases with TDE to Azure SQL Managed Instance</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>Many customers are long on their journey to Azure, while some are just beginning. As customers begin to look at migrating databases, security is typically the first discussion point. By default, Azure SQL encrypts data at rest and in transit. Azure does this utilizing a system managed key, however, you may also bring your own key (BYOK) if you would like too.</p>
+<p>In this blog post I am going to discuss moving a database to Azure SQL Managed instance which is currently leveraging transparent data encryption (TDE). There are three options of how this can be implemented. The first is to configure your Managed Instance (MI) to utilize a customer-managed key. Reference documentation can be found <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/sql-database/transparent-data-encryption-byok-azure-sql">here</a>. The second is to just restore your database to MI and allow MI to manage the encryption key. Reference documentation can be found <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/sql-database/sql-database-managed-instance-migrate-tde-certificate?tabs=azure-powershell">here</a>. The third is to leverage a managed service, Data Migration Service (DMS), which will restore the database and migrate the certificate for you. Reference documentation can be found <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/dms/tutorial-sql-server-to-managed-instance#configure-migration-settings">here</a>.</p>
+<p>For this blog post I will focus on option two as the scenario I am looking to fulfill is one where is customer is refreshing a database in Azure on a schedule. DMS is targeted as a tool to migrate the application to Azure, however, in this case we are doing continual testing and want to leverage updated database backups from on-prem. Therefore, for this post we will walk through how to move the certificate to Managed Instance as well as walk through how you can automate the database restores.</p>
+<p>First step we will need to do is setup a database and enable TDE. To do this I referenced Microsoft documentation which can be found <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/sql/relational-databases/security/encryption/transparent-data-encryption?view=sql-server-ver15">here</a>. As this is documented well, I will just provide my <a target="_blank" rel="noopener" href="https://github.com/aultt/ProofOfConcepts/blob/master/SQLDatabaseRefreshtoSQLMI/EnableTDEandbackupcert.sql">script</a> as reference. If this is unclear please comment and I will provide additional details.</p>
+<p>We now have a functioning TDE database on our server and can begin the process of exporting the certificate. If you are attempting to migrate a certificate from an existing database you may get an error and discover that your certificate is expired. While this does not prevent TDE from functioning, it will require you update the certificate to a valid certificate before you can export. This task is relatively easy. First you must create a new certificate. Command below is an example.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/01/createcertificate.png"></p>
+<p>Once the certificate is created, if this is a stand alone SQL Server, then all we need to do is rotate the certificate in. We can do this with an alter database command as shown below:</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/01/rotatecert.png"></p>
+<p>Finally, we can validate our database is leveraging the correct certificate with the following command.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/01/validatecert.png"></p>
+<p>What if we were leveraging Always On Availability Groups and our database was participating? Do we need to suspend data movement? Do we need to un-encrypt the database? Luckily, the answer is no. All we need to do is create the certificate on the primary, export the certificate, and then create the certificate on each secondary. An example of creating the certificate from a file is listed below:</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/01/createcertfromfile.png"></p>
+<p>After the certificate has been created on all nodes, the alter command can be run from the primary followed by the validation query on each server. If by chance the alter command is run before the certificate has been created on each secondary, all is not lost. You will, however, need to resume data movement once the certificate has been created.</p>
+<p>Now we have a TDE database which has a valid cert and we can begin the process of exporting it and migrating it to Azure SQL Managed Instance. Before we can move forward with the script to do this, we will want to validate that we have a few tools installed on our machine. Two PowerShell cmdlets are required, Az.keyvault and Az.Sql.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/01/validatecmdlets2.png"></p>
+<p>As you can see above the script will throw an error if they don’t exist, however, the command to install them is also provided. Installing them will require you run PowerShell as an admin. The next tool required is pvk2pfx.exe. This command line tool is provided as part of the Windows 10 SDK. It maybe confusing on how to install this, therefore, I am providing additional information. First, it requires you have Visual Studio installed. If you don’t currently have it installed, then you will wan to go download it first. You can download <a target="_blank" rel="noopener" href="https://visualstudio.microsoft.com/vs/">here</a>. Once Visual Studio is installed, you will want to launch Visual Studio Installer.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/01/visualstudioinstaller.png"></p>
+<p>Once you are in the installer, you will click Modify next to the Visual Studio you have installed.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/01/modifyvs.png"></p>
+<p>Once it has launched, you will want to select Individual components and the enable the check box next to Windows 10 SDK as depicted below:</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/01/selectWin10SDK-1024x514.png"></p>
+<p>Once this has been completed, you have all the tools required to run the script to export and upload the certificate.</p>
+<p>Let’s take a closer look at the PowerShell script we will leverage for this. First section of the script are variables we will want to set for our environment followed but some system generated variables based our environment. Each are described below.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/01/exportcertvar.png"></p>
+<ul>
+<li>  $certPath : location where we will export our certificate too.</li>
+<li>  $certName : Name which will be used for the certificate</li>
+<li>  $miResourceGroup : Resource Group your managed instance lives in</li>
+<li>  $miConnection : Name of your Managed Instance</li>
+<li>  $certPasswordSecret : Secret Name for your sa password which is stored in KeyVault</li>
+<li>  $keyVaultName : KeyVault name where secrets are stored</li>
+<li>  $certCerPath : Full path to exported certificate with .cer extension</li>
+<li>  $certPvkPath : Full path to exported certificate with .pvk extension</li>
+<li>  $certPfxPath : Full path to exported certificate with .pfx extension</li>
+</ul>
+<p>Notice here we are leveraging KeyVault to store our passwords so we ensure we are not checking in code with passwords into source control. Immediately following the variables is the call to the exe pvk2pfx. This tool will convert the files which we exported as part of setting up TDE to a pfx file, managed instance requires this format. The final step of the script converts the certificate to a base 64 encoded certificate and uploads it to managed instance. We now have our certificate successfully loaded into managed instance. How do we leverage it?</p>
+<p>Essentially from here we can restore any database which is utilizing this certificate for TDE onto managed instance with a normal restore command. Since the certificate exists within SQL Server it can decrypt the backup file and restore the database. When doing the restore MI will leverage the key which it has assigned for TDE for encryption. Therefore, you can be leveraging either BYOK or system managed key and MI will restore the database and leverage this certificate. MI allows for multiple certificates to be uploaded which ensures you can restore TDE databases from different servers or even the same server when it is leveraging a different certificate.</p>
+<p>Finally, I mentioned earlier I would provide a way to automate the restore of the database(s) with PowerShell. Luckily this is relatively easy thanks to the community driven cmdlets at <a target="_blank" rel="noopener" href="http://dbatools.io/">http://dbatools.io</a>. This script will also require the use of some additional tools.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/01/dbrestore.png"></p>
+<p>First couple requirements are PowerShell modules. As before, the script will validate they are installed and if not throw an error. The last tool required is AZCopy. AZCopy is leveraged to copy the backup files to Azure storage. There are several versions of the tool for this script I leveraged version 8.1. Next you will need to provide some environment details. Variables are listed below.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/01/dbrestoreenvironment.png"></p>
+<p>Next we will loop through the databases provided and Backup each one at a time. For clarification this backup command is setup to create a backup file once a day. If it is run more than once it will overwrite the existing file for that day. You may want to customize the backup and restore portion. If you do, then you can leverage the following command to get details Get-Help Backup-Dbadatabase -full</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/01/loopbackup-1024x193.png"></p>
+<p>Following the backup, we leverage AZCopy to move the backup files to Azure storage. And finally we loop through each of the backup files and restore to Managed Instance.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2020/01/restoreloop-1024x257.png"></p>
+<p>Notice we don’t need to provide any additional information for the certificate because we have already imported it to Managed Instance. We now have a script which can be scheduled to run on a regular interval to refresh one or more databases. All the scripts referenced here can be found in my GitHub location which can be found at <a target="_blank" rel="noopener" href="https://github.com/aultt/ProofOfConcepts/tree/master/SQLDatabaseRefreshtoSQLMI">here</a>. Please let me know if there are questions or if anything needs further clarification.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2020/01/19/moving-databases-with-tde-to-azure-sql-managed-instance/" data-id="ckv2nrjlq002cp8iieutc5br9" data-title="Moving Databases with TDE to Azure SQL Managed Instance" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Azure/" rel="tag">Azure</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Manged-Instance/" rel="tag">Manged Instance</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SQL/" rel="tag">SQL</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/TDE/" rel="tag">TDE</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-enabling-auditing-and-diagnostics-on-azure-sql-with-powershell" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/10/31/enabling-auditing-and-diagnostics-on-azure-sql-with-powershell/" class="article-date">
+  <time class="dt-published" datetime="2019-10-31T19:03:43.000Z" itemprop="datePublished">2019-10-31</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Azure/">Azure</a>►<a class="article-category-link" href="/categories/azure/">azure</a>►<a class="article-category-link" href="/categories/azure/SQL/">SQL</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/10/31/enabling-auditing-and-diagnostics-on-azure-sql-with-powershell/">Enabling Auditing and Diagnostics on Azure SQL with PowerShell</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>Do you have databases which were created in Azure without auditing or diagnostics turned on? Do you want to ensure all databases always have this enabled? Recently I have had discussions with customers around monitoring Azure SQL databases. Microsoft has a dashboard, Azure SQL Analytics, which gives you information around the performance of your databases. Additional information on Azure SQL Analytics can be found <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/azure-monitor/insights/azure-sql"><strong><em>here</em></strong></a><strong><em>.</em></strong> Before you can begin viewing things in the dashboard though, you will need to enable diagnostics for collection. Microsoft also documents how this can be done <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/sql-database/sql-database-metrics-diag-logging"><strong><em>here</em></strong></a>. In my case, I had several databases across Azure Sql Logical Servers and Azure SQL Managed Instance. Therefore, I wanted a script to enable them all as well as one that could be run on a regular basis to ensure any new databases were also enabled. Unfortunately, the PowerShell command-lets are different for Azure SQL DB and Azure SQL Managed Instance. Therefore, I have created two different scripts and placed them on my GitHub ProofOfConcepts Repo under <a target="_blank" rel="noopener" href="https://github.com/aultt/ProofOfConcepts/tree/master/EnableAuditing"><strong><em>EnableAuditing</em></strong></a>.</p>
+<p>Currently, both have variables defined at the top of the script which you will need to edit for your environment. After editing these, you are ready to step through the code. There are slight variations between the two scripts and I will call them out. First, we check if Audit is enabled on the server itself. If it is not, then we will enable it and point it to the log analytics workspace configured in the variables.</p>
+<p>Next, we will get all databases associated with the server and loop through each and ensure Auditing is enabled for each. After Auditing is enabled, we will get the diagnostic settings for the database and loop through each category ensuring it is enabled. If it is not enabled, then we will enable the category.</p>
+<p>The largest difference between the two scripts is that I was unable to find a PowerShell module equivalent to Get-AzSqlServerAudit and Set-AzSqlServerAudit for managed instance. Therefore, for managed instance, the script will only enable the audit and diagnostics for all the databases and not for the instance itself. This can, however, be achieved through the portal or through the arm template at creation.</p>
+<p>Once you have run the script, it can be scheduled to run through an Automation run-book on a regular basis to ensure any new databases added are also enabled. As always please provide any feedback or questions.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2019/10/31/enabling-auditing-and-diagnostics-on-azure-sql-with-powershell/" data-id="ckv2nrjle001np8ii4w6whzzy" data-title="Enabling Auditing and Diagnostics on Azure SQL with PowerShell" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-managing-azure-data-services-costs-through-automation" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/10/29/managing-azure-data-services-costs-through-automation/" class="article-date">
+  <time class="dt-published" datetime="2019-10-29T20:21:41.000Z" itemprop="datePublished">2019-10-29</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Azure/">Azure</a>►<a class="article-category-link" href="/categories/azure/">azure</a>►<a class="article-category-link" href="/categories/azure/Azure-Data-Factory/">Azure Data Factory</a>►<a class="article-category-link" href="/categories/azure/Azure-Data-Factory/Logic-App/">Logic App</a>►<a class="article-category-link" href="/categories/azure/Azure-Data-Factory/Logic-App/SSIS/">SSIS</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/10/29/managing-azure-data-services-costs-through-automation/">Managing Azure Data Services Costs through Automation</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>Cloud computing cost management…  Do you have services which should be running only during a pipeline?  Do you have a lab environment which you want to ensure isn’t running after hours?  There are multiple ways to manage and ensure minimal cost.  My first iterations were leveraging automation accounts.  These work well if you are comfortable writing code and the activity can be scheduled, however, recently I have been working with customers leveraging SQL Data Warehouse, Azure Analysis Server, and Integration Runtime.  These technologies often work as part of a pipeline run, and therefore can be started before and stopped immediately after.  Azure Data Factory (ADF) is often leveraged for moving data between data tiers, so I began my automation journey here.  Within ADF, you can automate almost anything with in Azure utilizing the web task.  Each of these are similar in implementation and all code is provided in my GitHub POC repo under <a target="_blank" rel="noopener" href="https://github.com/aultt/ProofOfConcepts/tree/master/AutomatedResumePauseDataServices">AutomatedResumePauseDataServices</a>.  For this blog, I will walk through the concepts as it relates to Azure SSIS Integrated Runtime (SSISIR).  Let’s get started with the simplest approach of leveraging ADF to stop/start SSISIR directly.  Microsoft provides an article which will walk you through how to do this <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/data-factory/how-to-schedule-azure-ssis-integration-runtime">here</a> as well as how you can leverage an automation account with a run-book if you prefer. </p>
+<p>While this provided the basic functionality, I wanted to have something more robust and something which could be easily shared with customers.  Therefore, I leveraged ADF with a mix of Logic Apps to provide more flexibility and usability. Two logic apps were developed per service, one for status and one for action.    Providing a way to check status ensures we only act when needed and also eliminates unwanted error messages. </p>
+<p>Let’s dig in and dissect the Logic App for SSISIR status.  We have two different ways to look at a logic app, through a designer or through code.  We will look at both, but we will look at the designer first. After opening up the logic app click Logic app designer on the left.  From here you will be presented with the view shown below:</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/10/LogicAppStatus.png"></p>
+<p>To look at the actual properties we will just click the selection when a HTTP request is received.  From here we see two different properties which are important, HTTP Post URL and Request Body.  HTTP Post URL is the URL which we will leverage in ADF to call the Logic App and the request body will hold the parameters which we will pass to the logic app to perform an action. Within the request body you will see the following JSON:</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/10/JSONParms.png"></p>
+<p>These are values which we will need to pass to our logic app.</p>
+<p>Next click HTTP so it also expands.  HTTP is the rest call we will be leveraging in this case to get the Status of our SSIS IR.  Take a look at the screen shot below:</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/10/LogicHTTP.png"></p>
+<p>Notice we have what appear to be variables in our URI.  These are the same values which we saw defined above in our request body.  We are leveraging them to allow for flexibility in calling our logic and for code reusability.</p>
+<p>Finally click on Response and you will see something which resembles below:</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/10/LogicResponse.png"></p>
+<p>As we are getting a status, we return the Status code and the body of the response to be further interrogated.</p>
+<p>Alternatively, we could look at the logic app through code view. Since the logic app is ultimately just JSON, it makes it very simple to source control and provide as a community resource for others to consume.</p>
+<p>Next let’s look at the SSISIR Action Logic app. </p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/10/LogicAction.png"></p>
+<p>The biggest difference I would like to note here is there is no response within the logic app.  Since here we are not getting the status but rather doing an action there is no response back.</p>
+<p>So now the question is how do we deploy these logic apps, and more importantly how do we leverage them?  Let’s first talk about how we can deploy them with the code we can obtain from GitHub.  First thing to do is create a logic app and give it a name based on your naming standards.  For my SSISIR status logic app I named it Logic-App-Get-SSIS-Status.  For purposes of demonstration here I am going to leverage a logic app I named “test”.  Once you create the logic app then you will be presented with the following screen.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/10/logicappdesigner.png"></p>
+<p>Since we are leveraging code and not the designer, we have a couple of options here.</p>
+<ul>
+<li>  Select Blank Logic App Template.  After which you will need to select Code view as below:</li>
+</ul>
+<p><img src="https://troyault.com/wp-content/uploads/2019/10/logicappcodedesigner.png"></p>
+<ul>
+<li>  Scroll the window pane to the left and then select Logic app code view</li>
+<li>  Click your logic app name above and then select Logic app code view</li>
+</ul>
+<p><img src="https://troyault.com/wp-content/uploads/2019/10/Logicappdesigner2.png"></p>
+<p>Now that you are in the Logic App Code view you can simply grab the JSON for Logic-App-Get-SSIS-Status from the GitHub repo <a target="_blank" rel="noopener" href="https://github.com/aultt/ProofOfConcepts/tree/master/AutomatedResumePauseDataServices/AzureSSISIR/LogicApp">here</a>.  Replace the entire JSON document in the logic app with the code from GitHub.  Save your logic app and then select Identity along the left side.  Here you will see System assigned identity is currently off. We want to turn this on and click Save.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/10/identity.png"></p>
+<p>Once complete follow the same steps for Logic-App-POST-SSIS-Action.  After completing this your logic apps are built and ready for consumption.</p>
+<p>Consuming our logic apps will be done through an ADF pipeline.  Our pipeline will leverage both our status and our action logic app.  Below we show the GUI representation of the pipeline.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/10/ADF1.png"></p>
+<p>Within our loop, we have the following actions:</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/10/ADF2.png"></p>
+<p>First task is a web call to our logic app to get the status of the SSIS IR.  After the return, the output is interrogated. Based on the action passed, if it doesn’t match then it will call the action logic app to ensure the state matches.  ADF will continue to loop until the status of the SSIS IR matches the requested state.</p>
+<p>As with logic apps, ADF pipelines are ultimately just JSON documents as well.  Again the JSON for the ADF pipeline can be found in my GitHub Repo <a target="_blank" rel="noopener" href="https://github.com/aultt/ProofOfConcepts/tree/master/AutomatedResumePauseDataServices/AzureSSISIR/DataFactory">here</a>. </p>
+<p>Key points here are the parameters listed at the bottom of the script.  When you go to deploy this to your ADF, you will want to replace the default values with your values for your environment.  When you are ready to create your pipeline, head over to ADF and create a new pipeline by clicking the + followed by clicking the Code icon in the upper right corner as depicted below:</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/10/ADF3.png"></p>
+<p>From here you can replace all the code with the code from the ADF JSON found in GitHub.  After pasting in the code, be sure to make the following changes:</p>
+<ol>
+<li> <em>Subscription</em>: Subscription Name where SSIS IR resides</li>
+<li> <em>Resource Group</em>: Resource Group where SSIS IR resides</li>
+<li> <em>IRName</em>: Name of SSIS Integration Runtime</li>
+<li> <em>GetStatusURL</em>: URL of Logic app for status</li>
+<li> PostActionURL: URL of Logic app for action</li>
+</ol>
+<p>All of the above will likely be obvious, however, the last two may not.  These are the URLs which are associated with the Logic apps that ADF will call to leverage.  To find these, you will go back to the Logic app into the Logic app designer.  Once in the designer, click “When a HTTP request is received” and copy the HTTP POST URL.  This is the URL you will need for both the GetStatus URL and Post Action URL.</p>
+<p>The final piece to add before testing out the automation is the Access control policies for the logic app and the data factory.  First let’s go to our data factory, once there click on Access control (IAM) on the left.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/10/IAM1.png"></p>
+<p>From here Click Add…</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/10/Iam2.png"></p>
+<p>For the Role, select contributor, and for Assign access to, select Logic App.  Finally select the logic app you added and click save.  Do this for each logic app.  Now your logic apps all have access to ADF.  Similarly, you will want to go to logic apps and ensure Data factory service has contributor role for each logic app.</p>
+<p>Now you have an ADF Pipeline that can be called to stop/start the SSISIR.  You can choose to call this pipeline as part of another pipeline, or you could also create a trigger to call this on a schedule.  In my case, I have a trigger which runs at the end of each day to ensure all my data services have been shut down so that I don’t incur unneeded expenses. </p>
+<p>If you find this helpful, then you can follow the same process to create the Azure SQL DW and Azure Analysis Service pipelines.  Please feel free to provide comments and feedback.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2019/10/29/managing-azure-data-services-costs-through-automation/" data-id="ckv2nrjlp0029p8iigr7w8aw7" data-title="Managing Azure Data Services Costs through Automation" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-cpw-personal-website" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/07/18/cpw-personal-website/" class="article-date">
+  <time class="dt-published" datetime="2019-07-18T23:57:12.000Z" itemprop="datePublished">2019-07-18</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/About-Me/">About Me</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/07/18/cpw-personal-website/">About</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h2 id="Troy-Ault"><a href="#Troy-Ault" class="headerlink" title="Troy Ault"></a>Troy Ault</h2><h2 id="Solution-Architect-Azure-Data-Platform-Financial-Services"><a href="#Solution-Architect-Azure-Data-Platform-Financial-Services" class="headerlink" title="Solution Architect . Azure Data Platform . Financial Services ."></a><em>Solution Architect . Azure Data Platform . Financial Services .</em></h2><h2 id="About-Me"><a href="#About-Me" class="headerlink" title="About Me"></a>About Me</h2><p>Hello, I am Troy Ault, welcome to my site! I am a passionate technologist who enjoys automating tasks around data platform.<br>When I’m not working, I’m an avid technologist, gamer, and car enthusiast. Please subscribe to my blog and reach out to me with any questions/suggestions you may have.  </p>
+<p>Note: All opinions and views expressed on this site are Troy’s and not an official recommendation from Microsoft. Any solutions, scripts, or guidance are provided as-is with no warranty and to be used at the risk of the user.  </p>
+<h3 id="GitHub-Repo"><a href="#GitHub-Repo" class="headerlink" title="GitHub Repo"></a><a target="_blank" rel="noopener" href="https://github.com/aultt">GitHub Repo</a></h3><p><a target="_blank" rel="noopener" href="https://www.linkedin.com/in/troyault/"></a></p>
+<h3 id="Follow-Me-On-LinkedIn"><a href="#Follow-Me-On-LinkedIn" class="headerlink" title="Follow Me On LinkedIn"></a><a target="_blank" rel="noopener" href="https://www.linkedin.com/in/troyault/">Follow Me On LinkedIn</a></h3><p><a target="_blank" rel="noopener" href="https://www.youracclaim.com/users/troy-ault/badges"></a></p>
+<h3 id="Certifications"><a href="#Certifications" class="headerlink" title="Certifications"></a><a target="_blank" rel="noopener" href="https://www.youracclaim.com/users/troy-ault/badges">Certifications</a></h3><h2 id="Videos"><a href="#Videos" class="headerlink" title="Videos"></a>Videos</h2><h2 id="Enjoy-these-demos-of-my-projects-in-use"><a href="#Enjoy-these-demos-of-my-projects-in-use" class="headerlink" title="Enjoy these demos of my projects in use."></a>Enjoy these demos of my projects in use.</h2><p><a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=VbAdc6Px9tA">https://www.youtube.com/watch?v=VbAdc6Px9tA</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2019/07/18/cpw-personal-website/" data-id="ckv2nrjl70010p8ii7vcsa9ok" data-title="About" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-lift-and-shift-ssis-to-azure" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/03/08/lift-and-shift-ssis-to-azure/" class="article-date">
+  <time class="dt-published" datetime="2019-03-08T22:08:07.000Z" itemprop="datePublished">2019-03-08</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Azure/">Azure</a>►<a class="article-category-link" href="/categories/azure/">azure</a>►<a class="article-category-link" href="/categories/azure/Azure-Data-Factory/">Azure Data Factory</a>►<a class="article-category-link" href="/categories/azure/Azure-Data-Factory/SSIS/">SSIS</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/03/08/lift-and-shift-ssis-to-azure/">Lift and Shift SSIS to Azure</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>With SQL Server 2008 end of life around the corner, July 9 2019 for those not aware, many companies are looking to lift and shift their SQL environments to the cloud. In doing so, most companies are looking for the opportunity to move to Platform as a Service (PaaS) because of the savings.</p>
+<p>When we talk lift and shift of data, most times my discussions have been around moving SQL Server to Azure SQL Managed Instance. What about the other services which companies have leveraged for years on-prem? One of the services being SSIS which many companies have invested time and resources developing data flows. Luckily, these can be fairly easily lifted and shifted in in Azure with minimal or no code changes. Within this blog post I will discuss many of the steps required to configure the SSIS runtime, but more importantly, I will call out all the references to the official documentation for each component.</p>
+<p>First thing that will be required is SSIS integration runtime. With the integration run time, we can leverage Azure SQL Database Server or Managed Instance to deploy our SSISDB. Is the concept of Integration runtime(IR) in Azure Data Factory a a new one to you? If so, then take a look at the following <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/data-factory/concepts-integration-runtime">documentation</a> which details all the different IR types available. A brief description of SSIS IR is the following taken from the documentation referenced above:</p>
+<p>Azure-SSIS IR is a fully managed cluster of Azure VMs dedicated to run your SSIS packages. You can bring your own Azure SQL Database or Managed Instance server to host the catalog of SSIS projects/packages (SSISDB) that is going to be attached to it. You can scale up the power of the compute by specifying node size and scale it out by specifying the number of nodes in the cluster. You can manage the cost of running your Azure-SSIS Integration Runtime by stopping and starting it as you see fit.</p>
+<p>Creating the SSIS IR is <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/data-factory/create-azure-ssis-integration-runtime">documented</a> very well for both deploying through the portal, PowerShell, or via Azure Resource Manager template. Depending on what your packages utilize you may need to do some custom configuration of the SSIS IR. <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/data-factory/how-to-configure-azure-ssis-ir-custom-setup">Documentation</a> around limitations and considerations should be reviewed. Custom setup lets you alter the default operating configuration or environment (for example, to start additional Windows services or persist access credentials for file shares) or install additional components (for example, assemblies, drivers, or extensions) on each node of your Azure-SSIS IR.</p>
+<p>The example I ran into recently was leveraging windows files shares within a package. If the SSIS package is relatively small, then updating file shares and changing them over to a URL to a blob store may be simple. However, if the package has many references to UNC paths changing, then these could be time consuming and require much regression testing. Luckily the steps to prevent this work is relatively easy.</p>
+<p><a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/sql/integration-services/lift-shift/ssis-azure-connect-with-windows-auth?view=sql-server-2017">Documentation</a> exists for connecting data sources and file shares with SSIS packages in Azure, however, for my specific example it wasn’t crystal clear the steps that were required. So I’m documenting here in hopes it will save others some time. In order to move forward, you will need an already configured SSIS IR and a storage account with files shares. We covered SSIS IR earlier in this post. If you need assistance in creating the storage account and file share, then there is a nice walkthrough which can be found <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/storage/files/storage-files-quick-create-use-windows">here</a>. Ensure you have a blob container created and a file share.</p>
+<p>Now we have our pre-reqs we can move to our custom configuration of our SSIS IR. We need to collect some information from our file share, specifically the username and key. To do this, navigate to the storage account, select Files, then select the file share you created. Next click Connect as shown below.</p>
+<p><img src="/wp-content/uploads/2019/03/image-1-1024x294.png"></p>
+<p>After selecting this you will be presented with options for Windows, Linux, and MacOS. For our purposes we just need the UNC path, the user name, and the key. I have cleared out my storage key but show both the others below.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/03/image-2.png"></p>
+<p>Once we have these three then we can now move to create a main.cmd file which will be called by the SSIS IR. Below you will see the contents of our file. You will want to replace the with your URL, user, and pass. you obtained above. Save this file as we will upload it to our blob store next.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/03/image-4.png"></p>
+<p>Next we need to upload our main.cmd file to the container we created in our blob store. Navigate to this container and upload the file. Once you have uploaded the file, we then need to create a Shared access signature. The easiest way to do this is using Azure Storage Explorer. You can easily launch it by going to the overview of the storage account and clicking Open In Explorer.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/03/image-5.png"></p>
+<p>If you don’t have Azure Storage Explorer downloaded, then it will provide a link for you to download it. If you do, then you can launch it directly from the portal. Once storage explorer is opened you will need to connect to your azure subscription and browse to your storage account. Right click on the storage container and select Get Shared Access Signature.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/03/image-6.png"></p>
+<p>Ensure you grant Read, Write, and List permissions for the signature. You will want to consider how long this Signature should be valid. Once this expires you will need to reconfigure your SSIS IR. Whatever you decide, make a note and a reminder on your calendar to update it once it expires. Once you click Create you will be presented with the URL and Query string. Copy both and store for later.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/03/image-8.png"></p>
+<p>Finally we are ready to configure our custom SSIS IR and then start it up. To make this easier, I have provided a PowerShell script that you will need to update four variables at the top of the script and then execute it. The script is available on my GitHub account and its name is <a target="_blank" rel="noopener" href="https://github.com/aultt/ProofOfConcepts/tree/master/SanitizeDBandUploadToAzure/PowerShell">ReconfigureSSISIR.ps1.</a> Download the PowerShell script and update the following variables at the top of the script $MyDataFactoryName , $MyAzureSsisIrName, $MyResourceGroupName, $MySetupScriptContainerSasUri. MySetupScriptContainerSasUri is the URL you copied from the previous step.</p>
+<p>You have now successfully configured your SSIS IR with a custom configuration which will allow your packages to reference a UNC path. Your package variables will now reference any file within the File Share as below. No credential are required because the custom configuration handles the authentication. If you haven’t deployed the package already then deploy the package to SSIS DB. You can now execute the package directly from SSIS DB catalog or create an ADF pipeline to execute the package.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/03/image-9.png"></p>
+<p>This concludes our custom configuration of the SSIS runtime, however, I would like to point out a few other things which may come up as a need as your are lifting your packages into Azure.</p>
+<p>If you have the need to copy files from your on-prem datacenter into Azure, then you will need to also have a <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/data-factory/create-self-hosted-integration-runtime">self-hosted integration runtime.</a> This is a very easy setup, just requires downloading an MSI and installing it on an existing server. Something to consider if you are moving files to an azure storage and you have configured <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/storage/common/storage-network-security">Azure Storage Firewalls</a>, then you will want to ensure your self-hosted integration runtime resides on a virtual machine running in a Vnet/subnet which is permitted through the firewall.</p>
+<p>Two addition links I would like to provide you in case you find the need to <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/data-factory/concepts-pipeline-execution-triggers">call an Azure Data factory Pipeline through code</a> or <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/data-factory/how-to-schedule-azure-ssis-integration-runtime">schedule start and stop of SSIS IR</a>.</p>
+<p>Hopefully someone will save some time and frustration with the resources here today or at least utilize it for reference for the underlying articles. Happy Automating!</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2019/03/08/lift-and-shift-ssis-to-azure/" data-id="ckv2nrjlp0025p8iie0mwccre" data-title="Lift and Shift SSIS to Azure" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Azure-Data-Factory/" rel="tag">Azure Data Factory</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Custom-Integration-Runtime/" rel="tag">Custom Integration Runtime</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SSIS/" rel="tag">SSIS</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-automating-sql-server-in-azure-with-azure-resource-manager-arm-part-3" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/01/15/automating-sql-server-in-azure-with-azure-resource-manager-arm-part-3/" class="article-date">
+  <time class="dt-published" datetime="2019-01-15T19:50:07.000Z" itemprop="datePublished">2019-01-15</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Azure/">Azure</a>►<a class="article-category-link" href="/categories/DSC/">DSC</a>►<a class="article-category-link" href="/categories/SQL-Server/">SQL Server</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/01/15/automating-sql-server-in-azure-with-azure-resource-manager-arm-part-3/">Automating SQL Server in Azure with Azure Resource Manager (ARM) **Part 3**</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>Finishing out the series on SQL Server Automation for IaaS. The final template is SQL Server Failover Cluster Instance running on storage spaces direct.</p>
+<p>Source code for this and all other templates can be found on my Github. For this template the direct link is <a target="_blank" rel="noopener" href="https://github.com/aultt/ARM/tree/master/FCIS2DExistingVnet">here</a>.</p>
+<p>Ensure you have read through the first two posts in this series, as in each one I discuss the differences but not in as much detail if it has been covered previously.</p>
+<p>Across all three templates the same files exist:</p>
+<ul>
+<li>  template.json : ARM Template which describes what will be deployed.</li>
+<li>  parameters.json : Parameter file passed to ARM template with variables defined for deployment</li>
+<li>  DSC Folder : DSC configurations applied to SQL Servers at build time</li>
+<li>  deploy.ps1 : PowerShell script to aid in deploying the template</li>
+</ul>
+<p>Deploy file looks the same as both the previous with the exception subscription was added as a parameter.</p>
+<p>Below you will see a list of the parameters required to be updated/verified in the parameters.json file:</p>
+<ul>
+<li>  location : region where machines will be deployed</li>
+<li>  namePrefix: Prefix which will be used for naming resources. Virtual machines will have a numeric number appended.</li>
+<li>  virtualMachineSize : Azure machine size of the VM to create.</li>
+<li>  existingVirtualNetworkRGName: Resource Group Name where VNet is created.</li>
+<li>  existingVirtualNetworkName: Name of the VNet which you are deploying to.</li>
+<li>  existingSubnet: Name of the subnet you are deploying to.</li>
+<li>  domainName: Name of your domain fully qualified. (Ex. tamz.us)</li>
+<li>  adminUsername: local administrator account for windows</li>
+<li>  adminPassword: KeVault reference to local admin password.</li>
+<li>  networkSecurityGroupName: Name of the network security group which is created.</li>
+<li>  availabilitySetName: Name of Availability Set which is created for all VMs to reside in.</li>
+<li>  ClusterStaticIP: Static IP address assigned to the cluster. There is often confusion around this as Azure has no way to assign static ip addresses. In this case, you will grab an ip address within your VNet, when the load balancer is created then behind the scenes Azure will reserve the IP address for you making it static.</li>
+<li>  ClusterIPSubnetClass: Subnet Class for the ClusterIp. (For a /24 provide 24 for a /16 provide 16)</li>
+<li>  ClusterIPSubnetMask: Subnet mask for the ClusterIP. (for a /24 255.255.255.0)</li>
+<li>  logdrivesize: Size of the log partition which will be created on the Storage Spaces Direct Volume.</li>
+<li>  datadrivesize: Size of the data partition which will be created on the Storage Spaces Direct Volume.</li>
+<li>  tempdbdrivesize: Size of the tempdb partition which will be created on the Storage Spaces Direct Volume.</li>
+<li>  sqlClusterName: SQL Network name for the FCI</li>
+<li>  sqlPort : Port SQL Server will be listening on</li>
+<li>  sqlStaticIP: Static IP address assigned to the SQL NetworkName.</li>
+<li>  diagnosticStorageAccountName: Name of the diagnosticStorageAccount where you would like to store diagnostics</li>
+<li>  diagnosticStorageAccountId: Id of the Storage account. (This can be found by clicking properties on the storage account)</li>
+<li>  sqlAuthenticationLogin: SQL account which will be made the sa.</li>
+<li>  sqlAuthenticationPassword: KeVault reference to the sa password.</li>
+<li>  sqlSysAdmins: Windows domain group which you would like to have sysadmin role.</li>
+<li>  domainUsername: Domain user with the ability to add computers to the domain and the ability to create computer accounts, such as Cluster and Availability Group listener.</li>
+<li>  sqlUserName: User account which will be running SQL Server Service</li>
+<li>  sqlUserPassword: KeyVault reference to the password for the SQL Service account</li>
+<li>  agtUserName: User Account which will be running SQL Server Agent Service account</li>
+<li>  agtUserPassword: KeyVault reference to the password for the SQL Service Agent account</li>
+<li>  _artifactsLocation: location of artifacts. If you don’t make any changes to the DSC template, then this can be left to point to my Github. If you need to make changes, then this allows you to point it to another location.</li>
+</ul>
+<p>After looking through the parameters you will find a a few additional, which you would expect if you have installed a SQL Failover Cluster in the past.</p>
+<p>Taking a look at the template.json file, we will find everything is pretty much the same with one exception. Storage spaces direct requires a minimum of two disks per server. With storage spaces direct, we are also limited to one storage volume per cluster. With this being the case, we need to have the ability to pool disks to ensure we meet our performance requirement. Below you will see the json which creates the disks required for the pool. Notice you have the flexibility to specify the number size and type of storage used.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/01/image-10.png"></p>
+<p>The remainder of the tempate.json file is identical or nearly identical to AlwaysOn.</p>
+<p>So where does the difference really reside you ask? The majority of the differences fall in the DSC templates. Storage spaces direct requires all nodes and disks are present before enabling and creating the pool. This in turn means there is less room for parallel tasks. Without parallel task, our time to build the cluster is longer. This is only relevant at time of build but worth noting. For comparison, a two node AlwaysOn cluster with previous template took about 30 min in my tests while the two node FCI cluster took slightly over an hour. So let’s walk through the primary configuration first then we will walk through the secondary.</p>
+<p>Looking at PrimarySQLNode.ps1, everything will look the same until just prior to the SQL Server Installation. You will see a new script component labeled SQLClusterConnectivity. Ultimately, this is leveraging Invoke-sqlcmd to verify if a connection can be made to the SQL Cluster Network Name. If it cannot, then it sleeps and attempts again until retrycount is exceeded. You may ask yourself “but I haven’t installed SQL yet, how does SQL Exist?” This is the big change with FCI. To install SQL, we must have the cluster created and we must have a shared disk to install SQL on. Before we can create the storage volume, we must have a cluster with all nodes and disks present. So… what happens is PrimarySQLNode.ps1 adds the server to the domain, installs all the windows features required, creates the cluster, and configures any non cluster specific parameters on the server. At that time it will wait until SecondarySQLNode has essentially completed its tasks. The final outcome of SecondarySQLNode is SQL Server running on a single node of the cluster. Once PrimarySQLNode finds this running it will continue on and AddNode to SQL Cluster completing the configuration.</p>
+<p>Finally, we will look at SecondarySQLNode.ps1. The first half of the configuration is identical to the AlwaysOn configuration. Differences begin after the node is added to the cluster.</p>
+<p><img src="/wp-content/uploads/2019/01/image-12-1024x168.png"></p>
+<p>Here we see a script resource EnableS2D which enables storage spaces direct on the cluster and creates the three partitions required for data, log and tempdb. After the storage pool and partitions are created, SQL Server can be installed and configured. The final step required is adding the load balancer probe to the SQL Cluster Resource which enables connectivity to the SQL Instance from other machines.</p>
+<p>Hopefully these ARM templates will aid customers in their journey to the cloud. Happy automating!</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2019/01/15/automating-sql-server-in-azure-with-azure-resource-manager-arm-part-3/" data-id="ckv2nrjl2000jp8iic9p80pdv" data-title="Automating SQL Server in Azure with Azure Resource Manager (ARM) **Part 3**" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ARM/" rel="tag">ARM</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Automation/" rel="tag">Automation</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SQL-Server/" rel="tag">SQL Server</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+
+
+  <nav id="page-nav">
+    
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
+  </nav>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/About-Me/">About Me</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/AlwaysOn/">AlwaysOn</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Authentication/">Authentication</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Azure/">Azure</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Container/">Container</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/DSC/">DSC</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Lab/">Lab</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/SQL-Server/">SQL Server</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/">azure</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/">Azure Data Factory</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/Logic-App/">Logic App</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/Logic-App/SSIS/">SSIS</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/SSIS/">SSIS</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/SQL/">SQL</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/uncategorized/">uncategorized</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ARM/" rel="tag">ARM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/AlwaysOn/" rel="tag">AlwaysOn</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-Lab/" rel="tag">Automated Lab</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-SQL-Install/" rel="tag">Automated SQL Install</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-SSMS/" rel="tag">Automated SSMS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automation/" rel="tag">Automation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure/" rel="tag">Azure</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Automation/" rel="tag">Azure Automation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Data-Factory/" rel="tag">Azure Data Factory</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Resource-Manager/" rel="tag">Azure Resource Manager</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cloud/" rel="tag">Cloud</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Credential/" rel="tag">Credential</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Current-SQL-Build/" rel="tag">Current SQL Build</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Custom-Integration-Runtime/" rel="tag">Custom Integration Runtime</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DSC/" rel="tag">DSC</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DSC-at-Scale/" rel="tag">DSC at Scale</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Desired-State-Configuration/" rel="tag">Desired State Configuration</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DevOps/" rel="tag">DevOps</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HyperV-Lab/" rel="tag">HyperV Lab</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Key-Vault/" rel="tag">Key Vault</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LabinaBox/" rel="tag">LabinaBox</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Manged-Instance/" rel="tag">Manged Instance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Migration/" rel="tag">Migration</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PowerShell/" rel="tag">PowerShell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL/" rel="tag">SQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Container/" rel="tag">SQL Container</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Linux/" rel="tag">SQL Linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Server/" rel="tag">SQL Server</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSIS/" rel="tag">SSIS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSMS-Install/" rel="tag">SSMS Install</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Secure-Login/" rel="tag">Secure Login</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/TDE/" rel="tag">TDE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Testing-Environement/" rel="tag">Testing Environement</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/ARM/" style="font-size: 13.33px;">ARM</a> <a href="/tags/AlwaysOn/" style="font-size: 13.33px;">AlwaysOn</a> <a href="/tags/Automated-Lab/" style="font-size: 10px;">Automated Lab</a> <a href="/tags/Automated-SQL-Install/" style="font-size: 15px;">Automated SQL Install</a> <a href="/tags/Automated-SSMS/" style="font-size: 10px;">Automated SSMS</a> <a href="/tags/Automation/" style="font-size: 11.67px;">Automation</a> <a href="/tags/Azure/" style="font-size: 11.67px;">Azure</a> <a href="/tags/Azure-Automation/" style="font-size: 10px;">Azure Automation</a> <a href="/tags/Azure-Data-Factory/" style="font-size: 10px;">Azure Data Factory</a> <a href="/tags/Azure-Resource-Manager/" style="font-size: 10px;">Azure Resource Manager</a> <a href="/tags/Cloud/" style="font-size: 10px;">Cloud</a> <a href="/tags/Credential/" style="font-size: 10px;">Credential</a> <a href="/tags/Current-SQL-Build/" style="font-size: 10px;">Current SQL Build</a> <a href="/tags/Custom-Integration-Runtime/" style="font-size: 10px;">Custom Integration Runtime</a> <a href="/tags/DSC/" style="font-size: 20px;">DSC</a> <a href="/tags/DSC-at-Scale/" style="font-size: 10px;">DSC at Scale</a> <a href="/tags/Desired-State-Configuration/" style="font-size: 16.67px;">Desired State Configuration</a> <a href="/tags/DevOps/" style="font-size: 10px;">DevOps</a> <a href="/tags/HyperV-Lab/" style="font-size: 10px;">HyperV Lab</a> <a href="/tags/Key-Vault/" style="font-size: 10px;">Key Vault</a> <a href="/tags/LabinaBox/" style="font-size: 10px;">LabinaBox</a> <a href="/tags/Manged-Instance/" style="font-size: 10px;">Manged Instance</a> <a href="/tags/Migration/" style="font-size: 10px;">Migration</a> <a href="/tags/PowerShell/" style="font-size: 13.33px;">PowerShell</a> <a href="/tags/SQL/" style="font-size: 13.33px;">SQL</a> <a href="/tags/SQL-Container/" style="font-size: 10px;">SQL Container</a> <a href="/tags/SQL-Linux/" style="font-size: 10px;">SQL Linux</a> <a href="/tags/SQL-Server/" style="font-size: 18.33px;">SQL Server</a> <a href="/tags/SSIS/" style="font-size: 10px;">SSIS</a> <a href="/tags/SSMS-Install/" style="font-size: 10px;">SSMS Install</a> <a href="/tags/Secure-Login/" style="font-size: 10px;">Secure Login</a> <a href="/tags/TDE/" style="font-size: 10px;">TDE</a> <a href="/tags/Testing-Environement/" style="font-size: 10px;">Testing Environement</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/07/">July 2021</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/08/">August 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/03/">March 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/10/">October 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/08/">August 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/05/">May 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/01/">January 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/11/">November 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/09/">September 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">August 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/06/">June 2015</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2021/07/07/automated-oracle-infrastructure-as-code-in-azure/">Oracle Infrastructure as Code in Azure</a>
+          </li>
+        
+          <li>
+            <a href="/2020/08/16/azure-devops-for-the-data-engineer-part-2/">Azure DevOps for the Data Engineer Part 2</a>
+          </li>
+        
+          <li>
+            <a href="/2020/08/10/azure-devops-for-the-data-engineer-part-1/">Azure DevOps for the Data Engineer Part 1</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/31/default-kit/">Default Kit</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/19/moving-databases-with-tde-to-azure-sql-managed-instance/">Moving Databases with TDE to Azure SQL Managed Instance</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2021 Troy Ault<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>

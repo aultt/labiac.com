@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>Utilizing Key Vault to create credentials for automation. | Automation One Day at a Time</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="[Troy Ault](https:&#x2F;&#x2F;social.msdn.microsoft.com&#x2F;profile&#x2F;Troy Ault) 8&#x2F;29&#x2F;2017 12:42:21 PM  Working with PowerShell I often find myself doing demos which require me to have some form of credentials or oth">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Utilizing Key Vault to create credentials for automation.">
+<meta property="og:url" content="http://example.com/2017/08/29/utilizing-key-vault-to-create-credentials-for-automation/index.html">
+<meta property="og:site_name" content="Automation One Day at a Time">
+<meta property="og:description" content="[Troy Ault](https:&#x2F;&#x2F;social.msdn.microsoft.com&#x2F;profile&#x2F;Troy Ault) 8&#x2F;29&#x2F;2017 12:42:21 PM  Working with PowerShell I often find myself doing demos which require me to have some form of credentials or oth">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/2017/08/29/utilizing-key-vault-to-create-credentials-for-automation/m/wp-content/uploads/2018/12/Create-Secret.png">
+<meta property="og:image" content="http://example.com/2017/08/29/utilizing-key-vault-to-create-credentials-for-automation/m/wp-content/uploads/2018/12/KeyVaultSecrets.png">
+<meta property="og:image" content="http://example.com/2017/08/29/utilizing-key-vault-to-create-credentials-for-automation/m/wp-content/uploads/2018/12/KeyvaultCred.png">
+<meta property="article:published_time" content="2017-08-29T12:42:51.000Z">
+<meta property="article:modified_time" content="2021-10-22T17:39:12.128Z">
+<meta property="article:author" content="Troy Ault">
+<meta property="article:tag" content="PowerShell">
+<meta property="article:tag" content="Key Vault">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2017/08/29/utilizing-key-vault-to-create-credentials-for-automation/m/wp-content/uploads/2018/12/Create-Secret.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Automation One Day at a Time" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/typeface-source-code-pro@0.0.71/index.min.css">
+
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Automation One Day at a Time</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-utilizing-key-vault-to-create-credentials-for-automation" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2017/08/29/utilizing-key-vault-to-create-credentials-for-automation/" class="article-date">
+  <time class="dt-published" datetime="2017-08-29T12:42:51.000Z" itemprop="datePublished">2017-08-29</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Authentication/">Authentication</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      Utilizing Key Vault to create credentials for automation.
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>[Troy Ault](<a target="_blank" rel="noopener" href="https://social.msdn.microsoft.com/profile/Troy">https://social.msdn.microsoft.com/profile/Troy</a> Ault) 8/29/2017 12:42:21 PM</p>
+<hr>
+<p>Working with PowerShell I often find myself doing demos which require me to have some form of credentials or other sensitive data.  In the past I’ve used really generic passwords which are easy to work with but always leave a bad taste in your mouth because the passwords are stored in plain text.  Azure has a very nice service called Key Vault which is a great solution to this problem.  To demonstrate I put together a simple script to build a credential and then utilize the credential to login into a virtual machine which is hosted in Azure.</p>
+<h2 id="Prerequisites"><a href="#Prerequisites" class="headerlink" title="Prerequisites"></a>Prerequisites</h2><p>Prior to running this script you will need to have setup a way to automatically login to Azure, if you have not done this please read my previous log post <a target="_blank" rel="noopener" href="https://blogs.msdn.microsoft.com/troy_aults_blog/2017/08/21/loginazurewithoutprompt/">here</a> first. Next we will need a function called <a target="_blank" rel="noopener" href="https://gallery.technet.microsoft.com/scriptcenter/Connect-Mstsc-Open-RDP-2064b10b">Connect-Mstsc</a> which is available on the PowerShell Gallery.</p>
+<h2 id="Creating-The-Key-Vault"><a href="#Creating-The-Key-Vault" class="headerlink" title="Creating The Key Vault"></a>Creating The Key Vault</h2><p>First thing we need to do is setup Key Vault in our subscription.  You have a couple options we can do it online through the online through the portal or in PowerShell.  Since I lend to automation I will demonstrate PowerShell.  Below is an example script to setup your first Key Vault.  We will want to run the setup under our personal account so we have the ability to also add/update/delete to the Key Vault in the web.  For instance adding in new keys we will do online because its a onetime task and we don’t want our secrets in plain text.  So to enable this when setting up the Key Vault we will utilize Login-AzureRMAccount.  We capture the output into the variable $login so we can extract our accountid and grant ourselves all permissions to the secrets.  In addition we need to provide a couple of details to create.  We need to provide a name for the Key Vault, a resource group, and if we want to automate with PowerShell, we will also need to provide our Service Principal so we can grant it privileges. <strong>$login = Login-AzureRmAccount</strong> <strong>$KeyVaultName = ‘MyKeyVault100’</strong> <strong>$ResourceGroup = “$($KeyVaultName)RG”</strong> <strong>$location = ‘EastUS2’</strong> <strong>$ServicePrincipal = ‘<a target="_blank" rel="noopener" href="http://manageinternalazureapp&/#39;">http://ManageInternalAzureApp&#39;</a></strong> <strong>$UserPrincipal = $login.Context.Account.id</strong> <strong>New-AzureRmResourceGroup -Name $ResourceGroup -Location $location</strong> <strong>New-AzureRmKeyVault -VaultName $KeyVaultName -ResourceGroupName $ResourceGroup -Location $location</strong> <strong>Set-AzureRmKeyVaultAccessPolicy -VaultName $KeyVaultName -ServicePrincipalName $ServicePrincipal -PermissionsToSecrets get</strong> <strong>Set-AzureRmKeyVaultAccessPolicy -VaultName $KeyVaultName -userPrincipalName $UserPrincipal -PermissionsToSecrets all</strong> As you see above this script will create a new Resource Group, Key Vault and then grant privileges to the Key Vault.  For this demo it is granting my automation ServicePrincipal get only privileges.  Therefore utilizing my automation I will not be able to update or delete the secrets.  My credentials I logged in to create the Key Vault will have all permissions on Secrets which will give me the ability to add new/update/delete secrets from the portal. After running the script we now have a Key Vault and we need to go put some secrets in to retrieve.  Now browse to ResourceGroups&gt;MyKeyVault100RG&gt;MyKeyVault100.  Here we will see Assets (Keys, Secrets) and Monitoring (Access Policies).  First if we look at Access Policies we will see our application and user which we granted get and all privileges to above.  Next we will go to Secrets.  Here we want to click + Add change our upload options to Manual and fill in the required fields.   Below we see the required fields.  We will do this for both the AdminUser and AdminPass. <a href="m/wp-content/uploads/2018/12/Create-Secret.png"><img src="m/wp-content/uploads/2018/12/Create-Secret.png"></a> After we have added both of our secrets we can refresh our Secrets page and we should see something like below: <a href="m/wp-content/uploads/2018/12/KeyVaultSecrets.png"><img src="m/wp-content/uploads/2018/12/KeyVaultSecrets.png"></a></p>
+<h2 id="Accessing-Key-Vault"><a href="#Accessing-Key-Vault" class="headerlink" title="Accessing Key Vault"></a>Accessing Key Vault</h2><p>We are now ready to consume our secrets!!  We can make calls out to KeyVault and build a credential.  Below is some sample code showing this. <strong>Login-AzurebyCert</strong> <strong>$AdminUserName = ‘AdminUser’</strong> <strong>$AdminPassName = ‘AdminPass’</strong> <strong>$AdminUser = Get-AzureKeyVaultSecret -VaultName $KeyVaultName -Name $AdminUserName</strong> <strong>$AdminPass = Get-AzureKeyVaultSecret -VaultName $KeyVaultName -Name $AdminPassName</strong> <strong>$mycred = New-Object System.Management.Automation.PSCredential (“$($AdminUser.SecretValueText)”, $AdminPass.SecretValue)</strong> First we leverage Login-AzurebyCert which is explained in earlier post.  We define which secrets we want to retrieve in this case AdminUser and AdminPass.  We retrieve the values for these then build a credential from them.  After we run the above script if we take a look at $mycred we will see we now have a PSCredential. <a href="m/wp-content/uploads/2018/12/KeyvaultCred.png"><img src="m/wp-content/uploads/2018/12/KeyvaultCred.png"></a> I can now leverage this credential to pass to any other PowerShell cmdlet which takes a credential as an input.  For my example here I am going to pass it to a PowerShell function I referenced earlier <a target="_blank" rel="noopener" href="https://gallery.technet.microsoft.com/scriptcenter/Connect-Mstsc-Open-RDP-2064b10b">Connect-Mstsc</a> which will allow me to RDP into a windows machine.  This machine could be local in azure or any where for that matter.  I will be automatically logged in without having the need to know or pass credentials.  Below is the actual call. Connect-Mstsc -ComputerName 192.168.10.1:3389 -Credential $mycred Having the ability to store secrets helps aid in cleaning up our automation/demo scripts to ensure we are being good stewards of our sensitive data.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2017/08/29/utilizing-key-vault-to-create-credentials-for-automation/" data-id="ckv2nrjlt002rp8iidb8b2hqa" data-title="Utilizing Key Vault to create credentials for automation." class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Key-Vault/" rel="tag">Key Vault</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PowerShell/" rel="tag">PowerShell</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2017/08/30/automating-lab-environments-with-labinabox-on-prem-or-in-the-cloud/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          Automating Lab Environments with LabInaBox on Prem or in the Cloud.
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2017/08/21/automation-with-azure-how-to-securely-script-login/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Automation with Azure? How to securely script login?</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/About-Me/">About Me</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/AlwaysOn/">AlwaysOn</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Authentication/">Authentication</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Azure/">Azure</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Container/">Container</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/DSC/">DSC</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Lab/">Lab</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/SQL-Server/">SQL Server</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/">azure</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/">Azure Data Factory</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/Logic-App/">Logic App</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/Logic-App/SSIS/">SSIS</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/SSIS/">SSIS</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/SQL/">SQL</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/uncategorized/">uncategorized</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ARM/" rel="tag">ARM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/AlwaysOn/" rel="tag">AlwaysOn</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-Lab/" rel="tag">Automated Lab</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-SQL-Install/" rel="tag">Automated SQL Install</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-SSMS/" rel="tag">Automated SSMS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automation/" rel="tag">Automation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure/" rel="tag">Azure</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Automation/" rel="tag">Azure Automation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Data-Factory/" rel="tag">Azure Data Factory</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Resource-Manager/" rel="tag">Azure Resource Manager</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cloud/" rel="tag">Cloud</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Credential/" rel="tag">Credential</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Current-SQL-Build/" rel="tag">Current SQL Build</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Custom-Integration-Runtime/" rel="tag">Custom Integration Runtime</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DSC/" rel="tag">DSC</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DSC-at-Scale/" rel="tag">DSC at Scale</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Desired-State-Configuration/" rel="tag">Desired State Configuration</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DevOps/" rel="tag">DevOps</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HyperV-Lab/" rel="tag">HyperV Lab</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Key-Vault/" rel="tag">Key Vault</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LabinaBox/" rel="tag">LabinaBox</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Manged-Instance/" rel="tag">Manged Instance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Migration/" rel="tag">Migration</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PowerShell/" rel="tag">PowerShell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL/" rel="tag">SQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Container/" rel="tag">SQL Container</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Linux/" rel="tag">SQL Linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Server/" rel="tag">SQL Server</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSIS/" rel="tag">SSIS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSMS-Install/" rel="tag">SSMS Install</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Secure-Login/" rel="tag">Secure Login</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/TDE/" rel="tag">TDE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Testing-Environement/" rel="tag">Testing Environement</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/ARM/" style="font-size: 13.33px;">ARM</a> <a href="/tags/AlwaysOn/" style="font-size: 13.33px;">AlwaysOn</a> <a href="/tags/Automated-Lab/" style="font-size: 10px;">Automated Lab</a> <a href="/tags/Automated-SQL-Install/" style="font-size: 15px;">Automated SQL Install</a> <a href="/tags/Automated-SSMS/" style="font-size: 10px;">Automated SSMS</a> <a href="/tags/Automation/" style="font-size: 11.67px;">Automation</a> <a href="/tags/Azure/" style="font-size: 11.67px;">Azure</a> <a href="/tags/Azure-Automation/" style="font-size: 10px;">Azure Automation</a> <a href="/tags/Azure-Data-Factory/" style="font-size: 10px;">Azure Data Factory</a> <a href="/tags/Azure-Resource-Manager/" style="font-size: 10px;">Azure Resource Manager</a> <a href="/tags/Cloud/" style="font-size: 10px;">Cloud</a> <a href="/tags/Credential/" style="font-size: 10px;">Credential</a> <a href="/tags/Current-SQL-Build/" style="font-size: 10px;">Current SQL Build</a> <a href="/tags/Custom-Integration-Runtime/" style="font-size: 10px;">Custom Integration Runtime</a> <a href="/tags/DSC/" style="font-size: 20px;">DSC</a> <a href="/tags/DSC-at-Scale/" style="font-size: 10px;">DSC at Scale</a> <a href="/tags/Desired-State-Configuration/" style="font-size: 16.67px;">Desired State Configuration</a> <a href="/tags/DevOps/" style="font-size: 10px;">DevOps</a> <a href="/tags/HyperV-Lab/" style="font-size: 10px;">HyperV Lab</a> <a href="/tags/Key-Vault/" style="font-size: 10px;">Key Vault</a> <a href="/tags/LabinaBox/" style="font-size: 10px;">LabinaBox</a> <a href="/tags/Manged-Instance/" style="font-size: 10px;">Manged Instance</a> <a href="/tags/Migration/" style="font-size: 10px;">Migration</a> <a href="/tags/PowerShell/" style="font-size: 13.33px;">PowerShell</a> <a href="/tags/SQL/" style="font-size: 13.33px;">SQL</a> <a href="/tags/SQL-Container/" style="font-size: 10px;">SQL Container</a> <a href="/tags/SQL-Linux/" style="font-size: 10px;">SQL Linux</a> <a href="/tags/SQL-Server/" style="font-size: 18.33px;">SQL Server</a> <a href="/tags/SSIS/" style="font-size: 10px;">SSIS</a> <a href="/tags/SSMS-Install/" style="font-size: 10px;">SSMS Install</a> <a href="/tags/Secure-Login/" style="font-size: 10px;">Secure Login</a> <a href="/tags/TDE/" style="font-size: 10px;">TDE</a> <a href="/tags/Testing-Environement/" style="font-size: 10px;">Testing Environement</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/07/">July 2021</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/08/">August 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/03/">March 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/10/">October 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/08/">August 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/05/">May 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/01/">January 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/11/">November 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/09/">September 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">August 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/06/">June 2015</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2021/07/07/automated-oracle-infrastructure-as-code-in-azure/">Oracle Infrastructure as Code in Azure</a>
+          </li>
+        
+          <li>
+            <a href="/2020/08/16/azure-devops-for-the-data-engineer-part-2/">Azure DevOps for the Data Engineer Part 2</a>
+          </li>
+        
+          <li>
+            <a href="/2020/08/10/azure-devops-for-the-data-engineer-part-1/">Azure DevOps for the Data Engineer Part 1</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/31/default-kit/">Default Kit</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/19/moving-databases-with-tde-to-azure-sql-managed-instance/">Moving Databases with TDE to Azure SQL Managed Instance</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2021 Troy Ault<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>

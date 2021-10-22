@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>Automation One Day at a Time</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta property="og:type" content="website">
+<meta property="og:title" content="Automation One Day at a Time">
+<meta property="og:url" content="http://example.com/page/2/index.html">
+<meta property="og:site_name" content="Automation One Day at a Time">
+<meta property="og:locale" content="en_US">
+<meta property="article:author" content="Troy Ault">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Automation One Day at a Time" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/typeface-source-code-pro@0.0.71/index.min.css">
+
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Automation One Day at a Time</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main">
+  
+    <article id="post-automating-sql-server-in-azure-with-azure-resource-manager-arm-part-2" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/01/02/automating-sql-server-in-azure-with-azure-resource-manager-arm-part-2/" class="article-date">
+  <time class="dt-published" datetime="2019-01-03T00:13:20.000Z" itemprop="datePublished">2019-01-02</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AlwaysOn/">AlwaysOn</a>►<a class="article-category-link" href="/categories/Azure/">Azure</a>►<a class="article-category-link" href="/categories/DSC/">DSC</a>►<a class="article-category-link" href="/categories/SQL-Server/">SQL Server</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/01/02/automating-sql-server-in-azure-with-azure-resource-manager-arm-part-2/">Automating SQL Server in Azure with Azure Resource Manager (ARM) **Part 2**</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>Continuing where we left off from our last post, we are now going to look into a more complex Azure Resource Manager (ARM) template. In this post we will cover an Always On deployment to an existing VNet and domain.</p>
+<p>Provided you read the first post in this series, you will have a copy of my Github ARM repo local to your machine. If not, head over to Github and download or fork a copy from <a target="_blank" rel="noopener" href="https://github.com/aultt/ARM">here</a>.</p>
+<p>Now that we have a copy to work with locally, let’s take a look at the files we have to work with. Things should look very similar to the standalone files. We have three files and a folder just as we did before:</p>
+<ul>
+<li>  template.json : ARM Template which describes what will be deployed.</li>
+<li>  paramaters.json : Parameter file passed to ARM template with variables defined for deployment</li>
+<li>  DSC Folder : DSC configurations applied to SQL Servers at build time</li>
+<li>  deploy.ps1 : PowerShell script to aid in deploying the template</li>
+</ul>
+<p>Again, we will start with the deploy.ps1 file.<br>You will quickly see this looks just like the standalone template with the exception of the variables values. We won’t go into the specifics of the contents of this file. If you would like a detailed walk through, then please reference the first post in this series.</p>
+<p><img src="/wp-content/uploads/2019/01/image-5-1024x491.png"></p>
+<p>parameters.json will look similar to the standalone template, however, we now have many additional variables which we must pass. Below is a list of the variables and their description:</p>
+<ul>
+<li>  location : region where machines will be deployed</li>
+<li>  namePrefix: Prefix which will be used for naming resources. Virtual machines will have a numeric number appended.</li>
+<li>  vmCount: number of vm’s to create. (Valid values: 2-8)</li>
+<li>  virtualMachineSize : Azure machine size of the VM to create.</li>
+<li>  existingVirtualNetworkRGName: Resource Group Name where VNet is created.</li>
+<li>  existingVirtualNetworkName: Name of the VNet which you are deploying to.</li>
+<li>  existingSubnet: Name of the subnet you are deploying to.</li>
+<li>  domainName: Name of your domain fully qualified. (Ex. tamz.us)</li>
+<li>  adminUsername: local administrator account for windows</li>
+<li>  adminPassword: KeVault reference to local admin password.</li>
+<li>  networkSecurityGroupName: Name of the network security group which is created.</li>
+<li>  availabilitySetName: Name of Availability Set which is created for all VMs to reside in.</li>
+<li>  ClusterStaticIP: Static IP address assigned to the cluster. There is confusion often around this as Azure has no way to assign static ip addresses. In this case you will grab an ip address within your VNet, when the load balancer is created behind the scenes Azure will reserve the IP address for you making it static.</li>
+<li>  ClusterIPSubnetClass: Subnet Class for the ClusterIp. (For a /24 provide 24 for a /16 provide 16)</li>
+<li>  availabilityGroupName: Name of the availability group to be created.</li>
+<li>  sqlPort : Port SQL Server will be listening on</li>
+<li>  listenerStaticIP: Static IP address for AvailabilityGroup Listener.</li>
+<li>  listenerSubnetMask: Subnet Mask for availability Group</li>
+<li>  diagnosticStorageAccountName: Name of the diagnosticStorageAccount where you would like to store diagnostics</li>
+<li>  diagnosticStorageAccountId: Id of the Storage account. (This can be found by clicking properties on the storage account)</li>
+<li>  sqlAuthenticationLogin: SQL account which will be made the sa.</li>
+<li>  sqlAuthenticationPassword: KeVault reference to the sa password.</li>
+<li>  sqlSysAdmins: Windows domain group which you would like to have sysadmin role.</li>
+<li>  domainUsername: Domain user with the ability to add computers to the domain and the ability to create computer accounts, such as Cluster and Availability Group listener.</li>
+<li>  sqlUserName: User account which will be running SQL Server Service</li>
+<li>  sqlUserPassword: KeVault reference to the password for the SQL Service account</li>
+<li>  _artifactsLocation: location of artifacts. If you don’t make any changes to the DSC template this can be left to point to my Github. If you need to make changes this allows you to point it to another location.</li>
+</ul>
+<p>As you can see, we have have many additional parameters we need to provide for an AlwaysOn template. Keep in mind these are just the required parameters, there are many other parameters you could choose to pass if you need to deviate from one of the values I have defaulted.</p>
+<p>Let’s now move on and look at template.json. template.json holds the additional parameters we could pass as well as all of the different resources which will be created with our template. Take a look at the parameters block. We have virtually every item here which can be passed as a parameter. If you find something that is not parameterized feel free to submit a pull request with it, or raise an issue and we will look to add it. Take a moment to look through all the parameters and familiarize yourself with what’s available.</p>
+<p>Moving down the document, the next notable resource I want to cover is availabilitySets. A quick definition of an availability set is provided below:</p>
+<blockquote>
+<p>An Availability Set is a logical grouping capability that you can use in Azure to ensure that the VM resources you place within it are isolated from each other when they are deployed within an Azure datacenter. Azure ensures that the VMs you place within an Availability Set run across multiple physical servers, compute racks, storage units, and network switches. If a hardware or Azure software failure occurs, only a subset of your VMs are impacted, and your overall application stays up and continues to be available to your customers. Availability Sets are an essential capability when you want to build reliable cloud solutions.</p>
+<p><a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/virtual-machines/windows/tutorial-availability-sets">https://docs.microsoft.com/en-us/azure/virtual-machines/windows/tutorial-availability-sets</a>  </p>
+</blockquote>
+<p>Storage Account is the next resource which is defined. We provision a storage account to utilize as a Cloud Witness for our Windows Cluster.</p>
+<p>Virtual Machines is our next resource. I’d like to point out here an important feature within the json document. Notice the copy item, this is how we create from 2 - 8 different virtual machines depending on the vmCount which you pass. All machines are built alike and the template just creates a loop which it executes till the vmCount is reached.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/01/image-9.png"></p>
+<p>You will notice as you look through the virtual Machines section, the disks which are created and the size and type of disk are parameters which can be passed.</p>
+<p>Extensions resource follows our virtual Machines. Extensions are where are DSC Configurations are defined. Below I have highlighted the interesting points for the DSC Extension.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/01/image-8.png"></p>
+<p>Note again we leverage the copy loop to loop through each VM created and apply the DSC Configuration. The difference here lies in the script for the configuration. We want to apply a different script for the first Node in the cluster than the remaining nodes. Why? Because initially we have to create the Windows Cluster, and we need to Create the Availability Group. We only do this once, on all other nodes we will do a join instead of a create. We will talk more through this when we get to the DSC configuration. Just note here we call PrimarySQLNode configuration for the first node and all other nodes will get SecondSQLNode applied.</p>
+<p>Following our extensions we have our network Interfaces and our load balancer. If you haven’t done any Azure deployments of Always On, you may be saying load balancer - why? Below is a picture which depicts how the Internal Load balancer is being utilized. The key difference for an Availability Group in Azure Virtual Machines is that the Azure virtual machines, require a <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-overview">load balancer</a>. The load balancer holds the IP addresses for the availability group listener. If you have more than one availability group, then each group requires a listener. One load balancer can support multiple listeners.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/01/AlwaysOnpic.png"></p>
+<p>We have now gone through all of the resources with the template.json file. The final thing to review are the two DSC Configurations included within the DSC folder. The two files are virtually identical with the difference being the secondary does a Join to the cluster and Availability Group as opposed to creating them. In addition, the secondary waits for Cluster and Availability Group to exist before it attempts to join and continue. Doing so allows for many items within the configuration to be completed in parallel ultimately saving build time.</p>
+<p>Opening up PrimarySQLNode.ps1 and walk through the file. As you walk through the file, look below as I will list out all the items which are set by the configuration:</p>
+<ul>
+<li>  Create a Firewall rule for the SQL Probe on the load balancer to communicate.</li>
+<li>  Create a Firewall run for the Cluster Probe on the load balancer to communicate.</li>
+<li>  Series of Disk configurations waiting for disks to be available then creating the volume and formatting the volume 64kb for SQL.</li>
+<li>  Install Failover Cluster Role on server</li>
+<li>  Install FailoverCluster tools</li>
+<li>  Install PowerShell tools for clustering.Installs Active Directory PowerShell tools</li>
+<li>  Join machine to the domain</li>
+<li>  Create windows cluster</li>
+<li>  Add Probe to the cluster resource to allow it to monitor the state of the cluster.</li>
+<li>  Set Cluster Quorum to Cloud Majority Node set.</li>
+<li>  Set PowerPlan to High Performance</li>
+<li>  Set TimeZone : EST by default</li>
+<li>  Install SQL Server</li>
+<li>  Assign PerformVolumeMaintenance Tasks to SQL Server Account</li>
+<li>  Assign Lock Pages in Memory to SQL Server Account</li>
+<li>  Set MaxDop based on number of cores allocated</li>
+<li>  Set Max Memory based on memory allocated to machine</li>
+<li>  Create Firewall rule for SQL Server</li>
+<li>  Create login for Cluster Service</li>
+<li>  Add permissions to Cluster Service to allow it to manage availability groups</li>
+<li>  Create Endpoint for AlwaysOn</li>
+<li>  Enable Always ON Feature for SQL Server</li>
+<li>  Create SQL Availability Group</li>
+<li>  Create SQL Availability Group Listener</li>
+<li>  Add Probe to SQL Cluster Resource</li>
+</ul>
+<p>Notice the same items are set for each instance of SQL Server. Here the differences are all of the additional configuration required for clustering. I’ll note here, the other file stored within the DSC directory is Cluster.ps1.zip. Within the zip file are all the different DSC resources which are required to deploy the configuration. I’ll note here as well, StorageDsc and xFailoverCluster both have modifications from what is available in GitHub today. The changes were required for the resources to work within Azure.</p>
+<p>We have now walked through all of the resources required to deploy an AlwaysOn Cluster in Azure. As before, I’ll note in my testing that I have tested a two node cluster and an eight node cluster. Two nodes took a total of 30 minutes to complete while the eight node cluster took 40 min in total. All and all thats pretty darn quick to build out a cluster. As always feel free to comment here or on my GitHub. Happy Automating!</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2019/01/02/automating-sql-server-in-azure-with-azure-resource-manager-arm-part-2/" data-id="ckv2nrjl2000hp8ii8tlo71i1" data-title="Automating SQL Server in Azure with Azure Resource Manager (ARM) **Part 2**" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ARM/" rel="tag">ARM</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AlwaysOn/" rel="tag">AlwaysOn</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/DSC/" rel="tag">DSC</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SQL-Server/" rel="tag">SQL Server</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-automating-sql-server-in-azure-with-azure-resource-managerarm" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/01/02/automating-sql-server-in-azure-with-azure-resource-managerarm/" class="article-date">
+  <time class="dt-published" datetime="2019-01-02T20:27:19.000Z" itemprop="datePublished">2019-01-02</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Azure/">Azure</a>►<a class="article-category-link" href="/categories/DSC/">DSC</a>►<a class="article-category-link" href="/categories/SQL-Server/">SQL Server</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/01/02/automating-sql-server-in-azure-with-azure-resource-managerarm/">Automating SQL Server in Azure with Azure Resource Manager(ARM)</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>In the previous blog entry, we talked about the different options available for SQL Server running in a PaaS solution in Azure. Today we will focus on the IaaS solutions available.</p>
+<p>Let’s get started! We have four different options when implementing SQL Server in an IaaS solution. The first three will be familiar if you have deployed SQL Server on-prem previously, with a couple of slight differences. We have SQL Server stand alone, SQL Server AlwaysOn Availability Groups, SQL Server failover cluster instance (FCI) , and finally SQL Server running in a container within Azure Kubernetes Service.</p>
+<p>Over the last year I have been working with customers, many of which struggle with getting started with Azure Resource Manager(ARM) templates. What I have found is customers are far more successful if they have an example which hits at least 80% of what they need for their environment. Therefore, I have put together a series of ARM templates which include the vast majority of the configurations customers have asked for. The best part is that it is stored on Github so everyone can take advantage of the work and if they so choose contribute or ask for additional features via the Issues tab in Github.</p>
+<p>Today I am going to focus on automating the first implementation SQL Server stand alone. So to get started you will want to head over to my GitHub pull down or fork my ARM repo. Direct link can be found <a target="_blank" rel="noopener" href="https://github.com/aultt/ARM">here</a>.</p>
+<p>For those who are not familiar with ARM templates I will first walk through the series of files which are included. Once you unzip the ARM-master.zip file you will have a series of files and directories. We are focusing on SQL Server stand alone so open up the folder SQLStandAloneExistingVnet.</p>
+<p>As the name implies, this template will allow you to create a Stand Alone SQL server in your existing domain and Vnet within Azure. Within the folder, we will find three files and a folder, each of which are described below:</p>
+<ul>
+<li>  azuredeploy.json : ARM Template which describes what will be deployed.</li>
+<li>  azuredeploy.paramaters.json : Parameter file passed to ARM template with variables defined for deployment</li>
+<li>  DSC Folder : DSC configuration applied to SQL Server at build time</li>
+<li>  StandAloneDeploy.ps1 : PowerShell script to aid in deploying the template</li>
+</ul>
+<p>If you have never heard of Azure Resource Manager (ARM) and would like to have a high level understanding of how it is laid out check out the following <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-overview">article</a>.</p>
+<p>First, let’s review the PowerShell script to understand how we will deploy this template.</p>
+<p><img src="/wp-content/uploads/2019/01/image-1-1024x503.png"></p>
+<ul>
+<li>As we can see, this script has four variables that need to be defined:<ul>
+<li>  Resource Group Name: Name of the resource group which will be created for your deployment</li>
+<li>  Resource Group Location: Location where resource group will be created.</li>
+<li>  Template File: Location of the template file which you downloaded from Github.</li>
+<li>  Template Parameter File: Location of the template parameter file which we will discuss next.</li>
+<li>  Last item which you will want to change will be the SubscriptionName you are creating the resource group in. Currently this is not a variable however it could be made one.</li>
+</ul>
+</li>
+</ul>
+<p>After the variable declaration, we see the next statement is Import-Module Az followed by Login-AzAccount. If you haven’t done ARM template development before, then you will likely not have this module available to import. No worries, you can still install the module. If you need to install, ensure you are at an elevated PowerShell prompt and type Install-module AZ. Once complete you can continue further.</p>
+<p>After login-AZAccount, the next block of code simply checks for the existence of the resource group you asked for in the deployment. If it doesn’t exist, then it creates it.</p>
+<p>Finally, the last line is what actually deploys the template with the parameter file you passed.</p>
+<p>azuredeploy.parameters.json holds all the required parameters you need to pass with the template to successfully deploy. There are many other parameters that can be passed which we will cover later. Listed below are the required parameters along with a short description:</p>
+<ul>
+<li>  VMName : Actual Name of the machine which will be created and placed into your domain.</li>
+<li>  localadminsusername: localadmin account created on the machine</li>
+<li>  localadminPasswor: keyVault reference to the password. **</li>
+<li>  ExistingDomainName: your fully qualified domain name. (Ex. tamz.us)</li>
+<li>  domainUserName: UserName of a domain user with the ability to add machines to the domain</li>
+<li>  domainUserPassword: keyVault reference to the password. **</li>
+<li>  existingVirtualNetworkResourceGroup: ResourceGroup where your existing Virtual Network (VNet) lives.</li>
+<li>  existingVirtualNetworkName: Name of the existing VNET where the new SQL Server will be placed.</li>
+<li>  existingSubnet: Name of the existing subnet the new SQL will be will created in.</li>
+</ul>
+<p>All other parameters are defaulted within the template however they could be added to the parameters files if you would like to override the default values.</p>
+<p>** KeyVault reference above. More and more scripts are stored in source control, and too many times it’s difficult to sanitize scripts before checking them in. As a result, all of my scripts leverage KeyVault as a store for sensitive data. If you currently don’t have a KeyVault deployed, then you will want to create a KeyVault, capture the id of the KeyVault, and place here along with the secret you would like to retrieve. If you are having a hard time finding the id, then do the following:</p>
+<ol>
+<li> Click the KeyVault from the Portal</li>
+<li> Select Properties on the left menu</li>
+<li> Record the value of Resource ID</li>
+</ol>
+<p>azuredeploy.json is the main template which holds all of the resource definitions for the template we are deploying. I’m going to point out a few things of interest within this file. The first entry you will see that is notable is the parameters block. Each item within this block can be defined within the parameters file if the default value listed does not meet your needs. As an example, one parameter which is missing from the parameter file is sqlSysAdmins. This is the group which you would like to be granted the SysAdmins role in SQL Server. To add this to your parameter file, you simply put a comma after the } which closes out existingSubnet, and place the name and value. For example, for me it would look like the below:</p>
+<p>“existingSubnetName”: {<br>“value”: “data”<br>},<br>“sqlSysAdmins”:{<br>“value”: “TAMZ\DBA”<br>}  </p>
+<p>Any additional parameters would follow the same pattern. As we look through the remainder of the template, we will see resources such as the network interface get created as well as the virtual machine. The last resource we will see within the template is an extension called DSC. If you are unfamiliar with DSC, it stands for Desired State Configuration. If you are looking to become more familiar with it, please see some of my earlier blog posts on DSC.</p>
+<p>The last two files we have to discuss are in the folder labeled DSC. Within this folder you will find the following files:</p>
+<ul>
+<li>  Standalone.ps1 : DSC configuration for SQL Server being deployed</li>
+<li>  StandAlone.ps1.zip : Compressed files containing all the resources required for the DSC configuration.</li>
+</ul>
+<p>While in this post I won’t go into the specifics of how DSC operates, I will describe what this particular configuration will provide you. All parameters you find within the DSC configuration can be passed through the ARM template file and will automatically be passed in turn to this configuration. So what all are we doing with this script? Take a look below as I will list out all the items which are set by the configuration:</p>
+<ol>
+<li> Create SQL Server Data drive and format as 64kb</li>
+<li> Create SQL Server Log drive and format as 64kb</li>
+<li> Set PowerPlan to High Performance</li>
+<li> Set TimeZone : EST by default</li>
+<li> Install SQL Server</li>
+<li> Assign PerformVolumeMaintenance Tasks to SQL Server Account</li>
+<li> Assign Lock Pages in Memory to SQL Server Account</li>
+<li> Set MaxDop based on number of cores allocated</li>
+<li> Set Max Memory based on memory allocated to machine</li>
+<li> Create Firewall rule for SQL Server</li>
+</ol>
+<p>While there are others things that can be set for SQL Server, these hit the top things recommended for SQL Server running in Azure. Article referenced for these settings in its entirety can be found <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sql/virtual-machines-windows-sql-performance">here</a>.</p>
+<p>This concludes the walk through of the template. For reference, when I deploy the template in my environment I have a fully configured SQL Server after roughly 23 min. Your experience may vary depending on different factors.</p>
+<p><img src="https://troyault.com/wp-content/uploads/2019/01/image-2.png"></p>
+<p>Next post we will look at the AlwaysOn template, walk through the differences from on-prem to Azure, and show you how you can leverage it.</p>
+<p>Thanks for reading and happy automating!</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2019/01/02/automating-sql-server-in-azure-with-azure-resource-managerarm/" data-id="ckv2nrjl4000qp8ii5xbqagqv" data-title="Automating SQL Server in Azure with Azure Resource Manager(ARM)" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ARM/" rel="tag">ARM</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Automated-SQL-Install/" rel="tag">Automated SQL Install</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Azure-Resource-Manager/" rel="tag">Azure Resource Manager</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/DSC/" rel="tag">DSC</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SQL-Server/" rel="tag">SQL Server</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-sql-server-modern-data-platform" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/01/01/sql-server-modern-data-platform/" class="article-date">
+  <time class="dt-published" datetime="2019-01-01T21:52:55.000Z" itemprop="datePublished">2019-01-01</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/SQL-Server/">SQL Server</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/01/01/sql-server-modern-data-platform/">SQL Server Modern Data Platform</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>Are you looking to modernize your data platform? Do you have need to quickly get off a version of SQL Server which is approaching end of life? Today I am going to walk through through the different options and help you determine how you will run SQL Server in the future.</p>
+<p>Before we talk about how will will run SQL Server in the future lets look back over the evolution.</p>
+<p><img src="/wp-content/uploads/2019/01/SQL-Lifecycle-1-1024x491.png"></p>
+<p>We can see very easily now that SQL Server release cycles are shorter and there is a lot of focus on SQL Server running in the cloud. In fact, SQL Server running in Azure is what is allowing the quicker release cycles. Customers are providing feedback during preview releases allowing for a faster and better product to be released. Knowing release cycles are shorter, we need to adapt how we are deploying so we can do so with shorter time and greater precision. We will cover how we can achieve both of these in the follow up posts on automation. Before we move off to automation, we need to understand all the different options we have available.</p>
+<p>When we talk about running SQL Server, we have three different deployment models we can leverage:</p>
+<ul>
+<li>  PaaS - Platform as a Service</li>
+<li>  IaaS - Infrastructure as a Service</li>
+<li>  Physical Server Deployment</li>
+</ul>
+<p>As DBA’s, it’s an added benefit that across all three deployment models the data platform is consistent regardless if it is on-prem or in the cloud.</p>
+<p>Let’s talk about PaaS solutions first. Within Azure we have several PaaS Deployment offers. All PaaS offers for SQL Server fall under the Azure SQL Database umbrella. Within Azure SQL Database we currently have three options depicted below.</p>
+<p><img src="/wp-content/uploads/2019/01/AzureSQLDB-1024x369.png"></p>
+<p>We call this Platform as a Service. You may ask yourself what does that mean or what does that buy me? The answer is a lot! For one, you never need to migrate again or patch. How many countless hours have DBA’s over the years spent in just these two areas? But there is more than that, we have BuiltIn-HA and Business Continuity out of the box. Do you have workloads that change from week to week or month to month? We have you covered because you can resize on the fly as well. Platform as a Service provides many advantages. Below is an image depicting them.</p>
+<p><img src="/wp-content/uploads/2019/01/PaasBenefits-3-1024x413.png"></p>
+<p>Now we understand what PaaS offers us. Next we need to understand the different purchasing models within the Azure SQL Database offering. There are two different purchasing models, vCore and DTU, of which there are different Service Tiers.</p>
+<p><strong>DTU-based Purchase Model</strong><br>What is a DTU you ask?  </p>
+<p>A [Database Transaction Unit] is a blended measure of CPU, memory, data I/O, and transaction log I/O in a ratio determined by an OLTP benchmark workload designed to be typical of real-world OLTP workloads. Doubling the DTUs by increasing the performance level of a database equates to doubling the set of resource available to that database.</p>
+<p>Now we know what a DTU is, let’s talk about the different Service tiers. There are three tiers: Basic, Standard, and Premium. All three tiers will provide 99.99% uptime. The differences comes with the blended ratio of resources you get. Microsoft provides a break down of the differences <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/sql-database/sql-database-service-tiers-dtu">here</a>.</p>
+<p><strong>vCore-based Purchase Model</strong></p>
+<p>The vCore model allows you to independently scale, compute and storage. This model will feel very similar to how you have managed your on-prem SQL environments. In addition, with vCore you have the ability to exchange your existing SQL licenses.</p>
+<p>Within the vCore model, we have different generations of Hardware we can select from as well as different service tiers.  </p>
+<p><em>Gen 4</em> - up to 24 logical CPUs on Haswell processors. vCore = 1 Physical Core 7GB of memory per core, attached SSD<br><em>Gen 5</em> - up to 80 logical CPUS on Broadwell processors. vCore = 1 Hyper-thread. 5.5GB of memory per core, fast eNVM SSD</p>
+<p><strong>vCore Service tiers</strong><br><em>General Purpose</em> : Premium remote storage, database size 5GB - 4TB<br><em>Business Critical</em>: Local SSD storage, database size 5GB - 1TB<br><em>Hyperscale (Preview)</em>: Autogrow of storage as needed. Supports up to 100TB storage and beyond. Local SSD for local buffer pool cache and local data storage.</p>
+<p>Full details on vCore as well as information on Azure Hybrid Benefit can be found <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/sql-database/sql-database-service-tiers-vcore">here</a>.</p>
+<p>All of the above correspond to Azure SQL DB in Single, Elastic Pool and Managed Instance with the exception of there is no DTU model for Managed Instance.</p>
+<p>Now we have covered all the different Deployment, Purchasing and Service Tiers available for SQL Server in Azure. How do we go about determining which flavor we want to deploy? The first thing I would check for within an application is whether it is a vendor application or home grown application? If it’s vendor, check vendor for supported SQL version and cloud db compatibility. Once you answer this, the next step is to leverage Database Migration Assistant (DMA) against each source. If you are unfamiliar with DMA, it’s a tool which helps you upgrade to modern data platform by detecting compatibility issues. Additional information and download information can be found <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/sql/dma/dma-overview?view=sql-server-2017">here</a>. Within DMA, you can check targets of SQL 2012 -2017 and Azure SQL Db and Azure SQL Managed Instance.</p>
+<p>After we have run DMA and know of any compatibility issues, then we can determine our options. We can look to adapt our application to fit into the the destination we prefer or fall down the stack. When I refer to stack, I tell customers to first look at Azure SQL Database Singleton or Elastic Pool first as it has the least amount of maintenance effort required. If your application does not fit this model, then look to Azure SQL Managed Instance which is very close to on-prem SQL. And finally, if you are unable to leverage SQL Managed Instance then look to run SQL on IaaS. Even though you may need to fall to IaaS for your SQL Server implementation, this doesn’t mean you have to lose all of the benefits of PaaS. Within IaaS, you can still leverage Desired State Configuration(DSC) to ensure you have a consistent build that doesn’t drift over time. If you aren’t familiar with DSC, then look through some of my previous posts to understand what it has to offer. Now we have talked about the different options for deploying SQL Server in Azure, the last thing I want to cover are the differences in Azure SQL Managed Instance and on-prem SQL Server.</p>
+<p>Azure SQL Managed Instance has near 100% features of SQL Server and provides native virtual network(VNET) implementation which address common security concerns. So what features doesn’t Managed Instance have?</p>
+<ol>
+<li><strong>Features obsolete in the cloud (or have a better alternative)</strong><ul>
+<li>  AlwaysOn Availability: Groups HA is built in</li>
+<li>  Windows Authentication: Azure Active Directory is the alternative</li>
+<li>  Management Data Warehouse: Azure Monitor is the alternative</li>
+<li>  Policy Based Management: common DBA tasks are performed by SQL Database</li>
+</ul>
+</li>
+<li><strong>Features retired</strong><ul>
+<li>  Database Mirroring: builtin HA/geo-replication better alternatives</li>
+<li>  Extended stored procedures: customers should use CLR</li>
+</ul>
+</li>
+<li><strong>Features considered Post-GA</strong><ul>
+<li>  Filestream</li>
+<li>  Filetable</li>
+<li>  Cross-instance distributed transactions (As well as transactions which require MS DTC)</li>
+<li>  Data Quality Services (DQS)</li>
+<li>  Master Data Services (MDS)</li>
+<li>  Stretch Database</li>
+</ul>
+</li>
+</ol>
+<p>After reading this article, hopefully you are more informed about the options which exist for deploying SQL Server. The next step is automating these deployments. The most challenging automation is around the IaaS implementations so that is where I will begin and assist you in your journey. Over the next couple of Blog posts, I will cover SQL Server Single Server Deployment in Azure VM, SQL AlwaysOn Deployment, and SQL Server FailoverCluster Deployment. I will provide you with configurable Azure Resource Manager (ARM) templates to allow you to quickly and reliably deploy your infrastructure. Until then, happy automating!</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2019/01/01/sql-server-modern-data-platform/" data-id="ckv2nrjlt002op8ii8aaiejx2" data-title="SQL Server Modern Data Platform" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Azure/" rel="tag">Azure</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Cloud/" rel="tag">Cloud</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Migration/" rel="tag">Migration</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SQL-Server/" rel="tag">SQL Server</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-desired-state-configurationdsc-for-sql-server-update-2" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2017/10/20/desired-state-configurationdsc-for-sql-server-update-2/" class="article-date">
+  <time class="dt-published" datetime="2017-10-20T15:16:01.000Z" itemprop="datePublished">2017-10-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/DSC/">DSC</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2017/10/20/desired-state-configurationdsc-for-sql-server-update-2/">Desired State Configuration(DSC) for SQL Server ***Update 2</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>[Troy Ault](<a target="_blank" rel="noopener" href="https://social.msdn.microsoft.com/profile/Troy">https://social.msdn.microsoft.com/profile/Troy</a> Ault) 10/20/2017 3:16:29 PM</p>
+<hr>
+<p><a href="/wp-content/uploads/2018/12/th.jpg"><img src="/wp-content/uploads/2018/12/th.jpg"></a>  Following up from my last post I have published the Failover Cluster Instance composite configurations and updated the previous configurations.  Initially lets talk about the updates to the which were pushed. Single Instance, Primary AlwaysOn,  and Secondary AlwaysOn  all had additional optional parameters added enabling all configurable items to be leveraged.  Each of these are defaulted so no breaking changes to the previous examples but additional flexibility added. Lets move on to Failover Cluster Instance as this has been one I have gotten several questions on how to leverage.  Utilizing the SQLCompositeResources module there are three new resources which will be utilized to build a Failover Cluster Instance <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/tree/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterDisk">FailOverClusterDisk</a>, <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/tree/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterInstanceFirstNode">FailOverClusterInstanceFirstNode</a>, and <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/tree/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterInstanceAdditionalNode">FailOverClusterInstanceAdditionalNode</a>.  To show how they can be leveraged we will walk through the example provided for <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/tree/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterInstanceFirstNode">FailOverClusterInstanceFirstNode</a> and <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/tree/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterInstanceAdditionalNode">FailOverClusterInstanceAdditionalNode</a>.</p>
+<h2 id="Failover-Cluster-Instance-First-Node"><a href="#Failover-Cluster-Instance-First-Node" class="headerlink" title="Failover Cluster Instance First Node"></a>Failover Cluster Instance First Node</h2><p>First resource we will cover this time is <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterInstanceFirstNode/Examples/FailOverClusterInstanceFirstNode_Example.ps1">FailOverClusterInstanceFirstNode_Example.ps1</a>. As in the previous post Credential Management and LCM Config are identical so I will not cover these again.</p>
+<h3 id="Metadata-CofigData"><a href="#Metadata-CofigData" class="headerlink" title="Metadata ($CofigData)"></a>Metadata ($CofigData)</h3><p>Here we need to provide a few more data elements than we did previously.  Unlike our previous builds we have to provide an installation path for our SQL Server database and logs files as these are required to reside on a shared disk.  Since at least one shared disk is required we need to provide the disk layout and how each drive should be labeled.  To simplify we do this by providing a key of DiskConfiguration and passing an array of hashtable values.  Each hashtable will provide the parameters FailOverClusterDisk requires. Finally we need to provide a name for our FCI and the IPaddress.</p>
+<h3 id="SQL-Server-Configuration"><a href="#SQL-Server-Configuration" class="headerlink" title="SQL Server Configuration"></a>SQL Server Configuration</h3><p>The main section is the SQL Configuration and its a simple call.  One call to  <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/tree/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterInstanceFirstNode">FailOverClusterInstanceFirstNode</a> will ensure the following:</p>
+<ol>
+<li> Ensure Failover Cluster feature is installed on the machine</li>
+<li> Ensures disks partitions are created, formatted and added to the cluster.  This is accomplished by calling <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/tree/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterDisk">FailOverClusterDisk</a></li>
+<li> Ensure .Net framework is present</li>
+<li> Installs Failover Cluster Instance of SQL Server</li>
+<li> Configures SQL FCI</li>
+</ol>
+<p>To complete the example Resources are moved and the configuration is generated and deployed.</p>
+<h2 id="Failover-Cluster-Instance-Additional-Node"><a href="#Failover-Cluster-Instance-Additional-Node" class="headerlink" title="Failover Cluster Instance Additional Node"></a>Failover Cluster Instance Additional Node</h2><p>Next we will look at <strong><a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterInstanceAdditionalNode/Examples/FailOverClusterInstanceAdditionalNode_Example.ps1">FailOverClusterInstanceAdditionalNode_Example.ps1</a></strong> </p>
+<h3 id="Metadata-CofigData-1"><a href="#Metadata-CofigData-1" class="headerlink" title="Metadata ($CofigData)"></a>Metadata ($CofigData)</h3><p>Since we are adding to an existing cluster, we have a much smaller set required.  All required values are listed in <strong><a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterInstanceAdditionalNode/Examples/FailOverClusterInstanceAdditionalNode_Example.ps1">FailOverClusterInstanceAdditionalNode_Example.ps1</a> .</strong></p>
+<h3 id="SQL-Server-Configuration-1"><a href="#SQL-Server-Configuration-1" class="headerlink" title="SQL Server Configuration"></a>SQL Server Configuration</h3><p>The main section for SQL Configuration is again simple, a singe call to FailOverClusterInstanceAdditionalNode.  Calling <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/tree/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterInstanceAdditionalNode">FailOverClusterInstanceAdditionalNode</a> will do the following:</p>
+<ol>
+<li> Ensure Failover Cluster feature is installed on the machine</li>
+<li> Wait for the cluster created from <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterInstanceFirstNode/Examples/FailOverClusterInstanceFirstNode_Example.ps1">Fail</a>OverClusterInstanceFirstNode to be found</li>
+<li> Join the cluster</li>
+<li> Ensure .Net framework is present</li>
+<li> Add node to SQL FCI</li>
+</ol>
+<p>To complete the example Resources are moved and the configuration is generated and deployed. With the addition of these composite resources I hope building out new SQL configurations will be simpler and have less redundancy.  Please let me know if you have issues or recommendations for improvement.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2017/10/20/desired-state-configurationdsc-for-sql-server-update-2/" data-id="ckv2nrjlc001hp8iic3sthgqv" data-title="Desired State Configuration(DSC) for SQL Server ***Update 2" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Automated-SQL-Install/" rel="tag">Automated SQL Install</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/DSC/" rel="tag">DSC</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Desired-State-Configuration/" rel="tag">Desired State Configuration</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-desired-state-configurationdsc-for-sql-server-update" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2017/10/09/desired-state-configurationdsc-for-sql-server-update/" class="article-date">
+  <time class="dt-published" datetime="2017-10-09T18:04:09.000Z" itemprop="datePublished">2017-10-09</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/DSC/">DSC</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2017/10/09/desired-state-configurationdsc-for-sql-server-update/">Desired State Configuration(DSC) for SQL Server ***Update</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>[Troy Ault](<a target="_blank" rel="noopener" href="https://social.msdn.microsoft.com/profile/Troy">https://social.msdn.microsoft.com/profile/Troy</a> Ault)</p>
+<p>10/9/2017 6:04:53 PM</p>
+<hr>
+<p><img src="/wp-content/uploads/2018/12/SuperManPS.jpg"> Over the past few months several individuals/customers have asked me for updated examples of the latest xSQLServer Resource.  As of this post, the current version is 8.2.0.0.  Throughout this post I will provide reference to configurations which are actually calling composite resources.  If you haven’t heard of composite resources, then the following reference will explain what they are and how they can be leveraged –&gt;   <a target="_blank" rel="noopener" href="http://blogs.msdn.com/b/powershell/archive/2014/02/25/reusing-existing-configuration-scripts-in-powershell-desired-state-configuration.aspx">Reusing existing configuration scripts in powershell desired state configuration</a> Before getting started, we will need to pull down a module with the required composite resources.  On my GitHub repro (located <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources">here</a>) you will find a module which has composite resources for stand alone SQL installation, AlwaysOn SQL Installation, and coming soon SQL Fail Over Cluster Instance (FCI).  Download the Zip, extract the contents and copy the SQLCompositeResources folder to C:Program FilesWindowsPowerShellModules.  Aside from this module, you will also need xSQLServer, xComputerManagement, xFailoverCluster as the composite resources will utilize these resources.  All example configurations are demonstrated utilizing a push configuration and assume the machine you are pushing from has the above referenced modules located in the PowerShell modules folder referenced previously. ***Update ensure the folder you copy is SQLCompositeResources, once you copy you should have something which looks like the below. <a href="media/2017/10/SQLCompositePath.png"><img src="media/2017/10/SQLCompositePath.png"></a></p>
+<h2 id="Single-Instance-Install-Example"><a href="#Single-Instance-Install-Example" class="headerlink" title="Single Instance Install Example"></a>Single Instance Install Example</h2><h4 id="Credential-Management"><a href="#Credential-Management" class="headerlink" title="Credential Management"></a>Credential Management</h4><p>We will first cover the simplest configuration <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/SingleInstanceInstall/Examples/SingleInstanceInstall_Example.ps1">SingleInstanceInstall_Example.ps1</a>.  Let’s look through what this configuration includes. First section of the script defines the credential objects we will pass to our configurations.  In the example referenced, the same password is leveraged for each of the three windows accounts and is stored clear text  in the script.  This is done for demonstration purposes only.  Please do not leverage this method in a production environment.  All examples referenced in this post were tested utilizing <a target="_blank" rel="noopener" href="https://github.com/Microsoft/DSC-data-driven-deployment/tree/dev/utility/LabInaBox">LabInabox</a>.</p>
+<h4 id="Metadata-CofigData"><a href="#Metadata-CofigData" class="headerlink" title="Metadata ($CofigData)"></a>Metadata ($CofigData)</h4><p>These are the variables that must be changed in order for the configuration to function properly.  First three are our service accounts which are referenced above, provided we updated these we can move on to the next items.  MofPath is the location where our Mof files will be created in.  SetupSourcePath is the location of our SQL Server installation media.  For my purposes I mounted the ISO to the domain controller and shared the location for my other machines.  And finally we have SQLSysAdminAccounts, here I have utilized DSCAdministrator which is my domain admin account in my DSC Lab environment.  This is not needed just the account I was logging into the machine with at the time.  This could be a domain group such as your SQL administrator group.  The last parameter needed to complete our metadata is NodeName.  NodeName is the machine we are looking to push the configuration too, in my case it was DSC-SQL6.  We now have all the required parameters defined that are required.  I know many are reading and saying but wait there are so many more things required, and in one way you are correct, however, in this case many have been defaulted.  Taking a look at the module for SingleInstanceInstall.schema.psm1 we will see there are many parameters defined such as installation directory which are defaulted just as they are typically if we were to run through a GUI install.  Any parameter you see here can be defined in our configuration.  Since we do not define them here they will utilize the default values.</p>
+<h4 id="LCM-Config"><a href="#LCM-Config" class="headerlink" title="LCM Config"></a>LCM Config</h4><p>Local configuration manager is configured as part of the example to ensure it is only Applying the configuration and the LCM is set in a Push mode.  For your production workload this could vary and can be modified as needed.</p>
+<h4 id="SQL-Server-Configuration"><a href="#SQL-Server-Configuration" class="headerlink" title="SQL Server Configuration"></a>SQL Server Configuration</h4><p>Our SQL configuration looks very simplified here as there is not much required for input.  Under the covers there is a lot more going on than meets the eye.  As stated above, we are utilizing a composite resource here called SingleinstanceIntall.  We are provided only a handful of parameters which are required and relying on the default values for all other parameters.  As stated above, you can pass the additional parameters if needed/required.  Lets dig further into what the composite resource SingleInstanceInstall provides us.  If we look at he psm1 module referenced above we will see this composite resource makes a call to xSQLServerSetup which is a resource from the xSQLServer module and a call so <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/SQLConfiguration/SQLConfiguration.schema.psm1">SQLConfiguration</a> which is a resource from SQLCompositeResources.  Digging deeper into <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/SQLConfiguration/SQLConfiguration.schema.psm1">SQLConfiguration</a> we see it does more than what it appears at first.  Looking through this resource we can see it does the following:</p>
+<ol>
+<li> Sets PowerPlan to High Performance</li>
+<li> Sets Virtualmemory initial and maximum size for windows</li>
+<li> Sets SQL Server memory</li>
+<li> Sets SQL Server MaxDop</li>
+<li> Enables TCP for SQL Server listening on 1433 or the port passed</li>
+<li> And finally sets 10 different SQL Server Configuration items based on the paramaters supplied.</li>
+</ol>
+<p>To recap a single call to: SingleInstanceInstall Standalone { Server = $Node.Nodename SetupSourcePath = $Node.SetupSourcePath SQLSysAdminAccounts = $Node.SQLSysAdminAccounts SqlInstallCredential = $Node.SqlInstallCredential SqlServiceCredential = $Node.SqlServiceCredential SqlAgentServiceCredential = $Node.SqlAgentServiceCredential } will give us a completely configured stand along SQL server ready to go.</p>
+<h4 id="Move-Resources"><a href="#Move-Resources" class="headerlink" title="Move Resources"></a>Move Resources</h4><p>Since we are in a push mode, we need to ensure all of our modules exist on on client before we push our configuration.  In this section we are simply utilizing test-path to verify the if the module exists and if so remove before copying the module with copy-item.</p>
+<h4 id="Generate-and-Deploy"><a href="#Generate-and-Deploy" class="headerlink" title="Generate and Deploy"></a>Generate and Deploy</h4><p>Finally we call the configuration to generate the mof file and start the configuration and wait for verbose output. Next we will talk about AlwaysOn, there are two configurations here PrimaryAlwaysOn and SecondaryAlwaysOn.  As the names imply PrimaryAlwaysOn is called for one and only one server and SecondaryAlwaysOn is called for all other servers participating in the cluster.  We will look at each of these configurations separately.</p>
+<h2 id="PrimaryAlwaysOn-Example"><a href="#PrimaryAlwaysOn-Example" class="headerlink" title="PrimaryAlwaysOn Example"></a>PrimaryAlwaysOn Example</h2><p>Several parts of our configuration will be identical to our Single Instance Install referenced earlier so we won’t go into those details again.  Taking a look at our example configuration <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/PrimaryAlwaysOn/Examples/PrimaryAlwaysOn_Example.ps1">PrimaryAlwaysOn_Example.ps1</a>, we have the same layout as our first three sections.   Credential management, Parms, and LCM config hold the same information we discussed earlier.  The core difference in the example is in the SQL configuration, two resources are called PrimaryAlwaysOn and AvailabilityGroup. Let’s dig into each of these with PrimaryAlwaysOn first.  To understand what’s going on behind the scenes we need to look at the module which is <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/PrimaryAlwaysOn/PrimaryAlwaysOn.schema.psm1">PrimaryAlwaysOn.schema.psm1</a>.  Notice once again in our example we only pass the required parameters for the resource, there are many other parameters which can be passed if required.  Looking into the resources called we see we call four different resources SingleInstanceInstall, WindowsClusterInstall, xcluster, and EnableAlwaysOn.</p>
+<h3 id="PrimaryAlwaysOn"><a href="#PrimaryAlwaysOn" class="headerlink" title="PrimaryAlwaysOn"></a>PrimaryAlwaysOn</h3><h4 id="SingleInstanceInstall"><a href="#SingleInstanceInstall" class="headerlink" title="SingleInstanceInstall"></a>SingleInstanceInstall</h4><p>SingleInstanceInstall should sound familiar as this is the exact resource we just finished dissecting above.</p>
+<h4 id="WindowsClusterInstall"><a href="#WindowsClusterInstall" class="headerlink" title="WindowsClusterInstall"></a>WindowsClusterInstall</h4><p>The next resource is WindowsClusterInstall for which we can look at the its module definition <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/WindowsClusterInstall/WindowsClusterInstall.schema.psm1">WindowsClusterInstall.schema.psm1</a>.  As we look at this resource we see it is simply ensuring the Windows Feature FailoverClustering is installed along with all the tools to manage it.</p>
+<h4 id="xCluster"><a href="#xCluster" class="headerlink" title="xCluster"></a>xCluster</h4><p>xCluster is a resource provided with the xFailoverCluster resource which allows us to create a windows failover cluster.  We must pass the clustername the cluster ip and an account which has the appropriate permissions to create the cluster.</p>
+<h4 id="EnableAlwaysOn"><a href="#EnableAlwaysOn" class="headerlink" title="EnableAlwaysOn"></a>EnableAlwaysOn</h4><p>EnableAlwaysOn is another composite resource provided with SQLServerCompositeResources.  Looking at the module <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/EnableAlwaysOn/EnableAlwaysOn.schema.psm1">EnableAlwaysOn.schema.psm1</a> we see it makes reference to several resources in xSQLServer which are the following:</p>
+<ol>
+<li> xSQLServerLogin -  used to add cluster service account and SQL Service account to the instance</li>
+<li> xSQLServerPermission - used to grant clusterservice account permission to manage availability groups</li>
+<li> xSQLServerEndpoint - used to create endpoints for availability groups</li>
+<li> xSQLServerEndPointPermission - used to grant permissions to endpoints</li>
+<li> xSQLServerAlwaysOnService - used to enable alwayson on SQL instance</li>
+</ol>
+<h3 id="AvailabilityGroup"><a href="#AvailabilityGroup" class="headerlink" title="AvailabilityGroup"></a>AvailabilityGroup</h3><p>AvailabilityGroup is a composite resource which takes a handful of parameters in which only three are required:</p>
+<ol>
+<li> Server - Server to create availability group on</li>
+<li> SQLInstallCredential - Credential with permissions to create availability group</li>
+<li> Availability Group Name - availability group name or as an array of availability groups</li>
+</ol>
+<p>Further exploring the AvailiabilityGroup module <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/AvailabilityGroup/AvailabilityGroup.schema.psm1">AvailabilityGroup.schema.psm1</a>, we will find there are many additional parameters available if needed.  We will also see that ultimately this resource is only calling one resource xSQLServerAlwaysOnAvailabilityGroup within it.  The difference in this resource is that we are looping through the array of availability group names passed and creating each of them.  One assumption made here is that all availability groups will have the same properties when they are created. The remainder of the example is the same.  We copy resources to the server, generate the configuration mof files and push the configuration.</p>
+<h2 id="Secondary-AlwaysOn-Example"><a href="#Secondary-AlwaysOn-Example" class="headerlink" title="Secondary AlwaysOn Example"></a>Secondary AlwaysOn Example</h2><p><a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/SecondaryAlwaysOn/Examples/SecondaryAlwaysOn_Example.ps1">SecondaryAlwaysOn_Example.ps1</a> will look very similar to PrimaryAlwaysOn_Example.ps1 with the difference being it passes all the secondary Nodes in the $ConfigData section as showed below, and calls SecondaryAlwyasOn and AvailabilityGroupJoin:</p>
+<p>$ConfigData = @{</p>
+<p>AllNodes = @(</p>
+<p>@{</p>
+<p>NodeName = ‘*‘</p>
+<p>SqlInstallCredential = $SqlInstallCredential</p>
+<p>SqlServiceCredential = $SqlServiceCredential</p>
+<p>SqlAgentServiceCredential = $SqlAgentServiceCredential</p>
+<p>MofPath = ‘C:Mofs’</p>
+<p>SetupSourcePath = ‘dsc-dcsqlserver’</p>
+<p>SQLSysAdminAccounts = ‘DSCAdministrator’</p>
+<p>ClusterName = ‘DSCTestCluster’</p>
+<p>ClusterIP =‘192.168.210.99’</p>
+<p>PSDscAllowPlainTextPassword = $true</p>
+<p>PSDscAllowDomainUser =$true</p>
+<p>PrimaryAlwaysOnNode = ‘DSC-SQL4’</p>
+<p>AvailabilityGroupName =@(‘AG1’,’AG2’)</p>
+<p>}</p>
+<p>@{NodeName =“DSC-SQL5”}</p>
+<p>@{NodeName =“DSC-SQL6”}</p>
+<p>)</p>
+<p>}</p>
+<h3 id="SecondaryAlwayson"><a href="#SecondaryAlwayson" class="headerlink" title="SecondaryAlwayson"></a>SecondaryAlwayson</h3><p>SecondaryAlwaysOn will look very similar to PrimaryAlwaysOn.  Lets take a look at the differences in the module <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/SecondaryAlwaysOn/SecondaryAlwaysOn.schema.psm1">SecondaryAlwaysOn.schema.psm1</a>.  Here we call SingleInstanceInstall and windows ClusterInstall just as we did in PrimaryAlwaysOn.  What’s different here is that we need to wait for the Cluster to be created from the PrimaryAlwaysOn configuration before we can proceed, so we make a call to the resource xWaitForCluster.  Once the cluster has been found, we make a call to xCluster to join the cluster and then to EnableAlwaysOn to enable alwaysOn on the node.  We have now completed our alwayson configuration on our secondary.</p>
+<h3 id="AvailabilityGroupJoin"><a href="#AvailabilityGroupJoin" class="headerlink" title="AvailabilityGroupJoin"></a>AvailabilityGroupJoin</h3><p>AvailabilityGroupJoin is utilized to join our secondary servers to our primary availability group.  Looking into the the module <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/AvailabilityGroupJoin/AvailabilityGroupJoin.schema.psm1">AvailabilityGroupJoin.schema.psm1</a>, we see again that we are looping through each of the availability group names passed.  First we call out to resource xWaitForAvailabilityGroup to ensure the AvailabilityGroup was created on the primary.  Once it has been found, we will leverage xSQLServerAlwaysOnAvailabilityGroupReplica to create the replica and join the server to the availability group. The remainder of the example is the same way we copy resources to the server, generate the configuration mof files and push the configuration.</p>
+<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p>Composite resources allow you to simplify your configurations so they are not as complex to read, and more importantly allow you to reuse code so that it is not duplicated but rather referenced.  Please let me know if there are questions or if there is any confusion around how the resource is put together.  I will be working on the FCI resources and examples and will be publishing them to the GitHub repo and blogging on them here. Call out to Ashley McGlone as I leveraged the his PowerShell module to build the composite resources.  You can read about how to utilize them on his <a target="_blank" rel="noopener" href="https://blogs.technet.microsoft.com/ashleymcglone/2015/02/25/helper-function-to-create-a-powershell-dsc-composite-resource/">blog</a>.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2017/10/09/desired-state-configurationdsc-for-sql-server-update/" data-id="ckv2nrjlc001ep8ii23rk5018" data-title="Desired State Configuration(DSC) for SQL Server ***Update" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Automated-SQL-Install/" rel="tag">Automated SQL Install</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/DSC/" rel="tag">DSC</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Desired-State-Configuration/" rel="tag">Desired State Configuration</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-automating-lab-environments-with-labinabox-on-prem-or-in-the-cloud" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2017/08/30/automating-lab-environments-with-labinabox-on-prem-or-in-the-cloud/" class="article-date">
+  <time class="dt-published" datetime="2017-08-30T14:48:34.000Z" itemprop="datePublished">2017-08-30</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Lab/">Lab</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2017/08/30/automating-lab-environments-with-labinabox-on-prem-or-in-the-cloud/">Automating Lab Environments with LabInaBox on Prem or in the Cloud.</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>[Troy Ault](<a target="_blank" rel="noopener" href="https://social.msdn.microsoft.com/profile/Troy">https://social.msdn.microsoft.com/profile/Troy</a> Ault) 8/30/2017 2:48:12 PM</p>
+<hr>
+<p>Today building out repeatable demo/lab environments quickly has become a necessity.  Previous this year I released LabInaBox which provided for a quick way to build out lab environments on a Windows 10 machine using Hyper-V.  As more and more customers are looking at Azure I wanted to provide a similar experience for cloud lab deployment.  Today I will walk through the new GUI interface which has been deployed with this release and discuss how you can leverage LabInaBox to build test environments in Hyper-V or in Azure. </p>
+<h2 id="Install-LabInaBox"><a href="#Install-LabInaBox" class="headerlink" title="Install LabInaBox"></a>Install LabInaBox</h2><p>First things first we need to install LabInaBox.  The installation msi can be found on GitHub <a target="_blank" rel="noopener" href="https://github.com/Microsoft/DSC-data-driven-deployment/tree/dev/utility/LabInaBox/ConfigurationUtility/LabInaBox.msi">here</a>.  Simply download the msi locally to your machine.  After downloading you will need to unblock the file before you can execute the msi.  You can do this by right clicking on the executable and selecting properties then clicking the unblock box. <a href="/wp-content/uploads/2018/12/unblockfile.png"><img src="/wp-content/uploads/2018/12/unblockfile.png"></a> After executing you will be prompted for the installation Folder by default it will place in the C:LabInaBox folder.  The installation path can be modified, however I would recommend not placing it in the program files folder as files are created by the application in this directory which would require administrative privileges.  After the setup completes you should have a folder structure with supporting files which resembles the below: <a href="/wp-content/uploads/2018/12/LabinaboxFolderstructure.png"><img src="/wp-content/uploads/2018/12/LabinaboxFolderstructure.png"></a> At this point we have all the files required to move forward Azure Deployment.  If we want to also leverage the Hyper-V lab scenario we will need to provide a sysprepped Windows2016 image in the ParentVMDisks folder.  Due to licensing and size of the file I was not able to package this into the installation.  If you need further instructions on creating the sysprepped image further details can be found in the <a target="_blank" rel="noopener" href="https://github.com/Microsoft/DSC-data-driven-deployment/tree/dev/utility/LabInaBox">ReadMe</a> under installation.</p>
+<h2 id="LabInaBox-Layout"><a href="#LabInaBox-Layout" class="headerlink" title="LabInaBox Layout"></a>LabInaBox Layout</h2><p>LabInaBox has a GUI configuration utility which will aid you in generating files you will leverage to build out your labs.    To further understand the layout I will walk through the steps for creating these files then go into the detail of what the files are and how to leverage them.  So lets get started by launching LabInaBox. Once you launch you will be presented with the screen below. <a href="/wp-content/uploads/2018/12/LabinaboxstartScreen.png"><img src="/wp-content/uploads/2018/12/LabinaboxstartScreen.png"></a> You have the option of starting from scratch selecting which type of Lab you want to build and filling out the appropriate fields, however for simplicity I have have provided templates which you can open and modify then generate your lab files.  We will walk through the Azure one first.  To utilize these click File..Open and select DefaultAzureConfig.json.</p>
+<h2 id="Azure-LabInaBox"><a href="#Azure-LabInaBox" class="headerlink" title="Azure LabInaBox"></a>Azure LabInaBox</h2><h3 id="Generate-Azure-Lab-Automation-Scripts"><a href="#Generate-Azure-Lab-Automation-Scripts" class="headerlink" title="Generate Azure Lab Automation Scripts"></a>Generate Azure Lab Automation Scripts</h3><p>Below you see the values which have been pre-populated from the template.  Notice there are three values which are either blank or have XXXX that you will need to provide the details for.  These are Azure Login Certificate Name, Azure ApplicationID and Azure Tenant ID.  The Azure Lab scripts require you to have created a service principal name with a certificate so that you can automatically log into azure from your machine without user input.  If you have not read and completed this step please refer to my previous <a target="_blank" rel="noopener" href="https://blogs.msdn.microsoft.com/troy_aults_blog/2017/08/21/loginazurewithoutprompt/">blog</a> where I walk you through the steps. <a href="/wp-content/uploads/2018/12/AzureConfig.png"><img src="/wp-content/uploads/2018/12/AzureConfig.png"></a> Once you provide the three required values discussed above you could click Finish and the fields will be generated with the values provided.  However, you may want to change a few things here though so lets walk through some of these items and explain.  Lab Machine Prefix is utilized to create a folder structure on disk where the scripts are stored.  You will also see this same prefix is what I chose to pass for my Domain Name and I prepended it to each machine name.  I prefer this as I know when looking at the machine what lab it is tied to.  Other items you will likely want to change are the Domain Admin Username and Password and the VMUserName and Password.  Domain Admin is as it sounds the domain administrator for the domain and VMUsername is the local administrator on the machine.  Azure Publisher, Azure Offer, AzureSku and OS are all values which determine which azure template is utilized to build the VM.  Three additional items of interest which you may not immediately follow are Azure Automation Account, Azure Automation Resource Group, and DSC Configuration.  Azure Automation Account is the name of the automation account which will be generated via the PowerShell scripts and it will be created in the Azure Automation Resource Group.  All DSC Scripts, modules ect. will be uploaded to this location.  A separate resource group is leveraged here so that in if we have a nightly destroy script to remove resource groups we can easily filter out our automation account.  DSCConfiguration is the final item of interest here.  When you install LabInaBox two configurations are provided DomainConfig and SQLAzureConfig.  Additional ones can be added overtime as the community feels needed.  Make your changes and click Finish.  Upon clicking Finish the application will close and open windows explorer showing the files it has generated.  You should see something similar to below.  Notice its created in the LabConfig directory under TST which was our LabPrefix.  Each file is prefaced with our prefix. <a href="/wp-content/uploads/2018/12/AzureLabFiles.png"><img src="/wp-content/uploads/2018/12/AzureLabFiles.png"></a></p>
+<h3 id="What-are-these-files-generated-and-how-do-I-leverage-them"><a href="#What-are-these-files-generated-and-how-do-I-leverage-them" class="headerlink" title="What are these files generated and how do I leverage them?"></a>What are these files generated and how do I leverage them?</h3><p>Notice we have three files here, one JSON file and two ps1 files.  Lets take a look at the JSON file first.  I am utilizing Visual Studio Code to analyse the file.  Below we see the contents of the JSON file.  Notice first I did not provide the Certificate Subject, ApplicationID, or TenantID but I was able to generate the scripts.  If I ran the scripts currently they would error because these are required to connect to Azure.  Throughout the JSON file we see all the information we input into the GUI tool and some additional ones which are automatically generated. <a href="/wp-content/uploads/2018/12/AzureJSONFile.png"><img src="/wp-content/uploads/2018/12/AzureJSONFile.png"></a> There is nothing we need to change here I just wanted to show this file is generated and the PowerShell scripts will consume these values.  We could modify/create this file manually if we wanted however we could also open the file in the tool and modify it and click finish and the scripts will be updated. The next file listed is TST_Create.ps1 contents of it are showed below: <a href="/wp-content/uploads/2018/12/AzureCreate.png"><img src="/wp-content/uploads/2018/12/AzureCreate.png"></a> First item in the script is to load a custom module LabinaBox.psm1.  You will notice it has a WarningAction of Silently Continue.  This suppresses the warning message which is generated because Login-AzureCert doesnt comply with naming standards.  Next we see a series of cmdlet calls which will build out our AzureLab environment and configure it.  Notice each cmdlet takes a parameter of configuration.  Configuration is the JSON file we looked at previously.  Within each module this json file will be converted into a PSCustom Object so that each property can be dot source referenced.  A quick run down of each cmdlet and what it is used for is listed below for reference: New-AzureLab</p>
+<ul>
+<li>  Creates ResourceGroup for Lab</li>
+<li>  Creates Azure Virtual Network</li>
+<li>  Creates Each Azure VM requested</li>
+</ul>
+<p>Publish-AzureDSModules</p>
+<ul>
+<li>  Creates ResourceGroup for Automation Account</li>
+<li>  Creates Automation Account</li>
+<li>  Creates Storage Account</li>
+<li>  Creates StorageContainer</li>
+<li>  Uploads DSC Modules from Install LocationLabInaBoxDSCResourcesAzureAutomation to container</li>
+<li>  Creates AzureAutomationModule from uploaded file</li>
+</ul>
+<p>New-AzureDSCConfigurations</p>
+<ul>
+<li>  Creates Credentials in Automation account</li>
+<li>  Imports DSC Configurations to AutomationAccount</li>
+</ul>
+<p>Compile-AzureDSCConfiguration</p>
+<ul>
+<li>  Compiles each configuration for each node requested</li>
+</ul>
+<p>Set-AzureDSCNodeConfigurations</p>
+<ul>
+<li>  Registers each Node with AzureAutomation DSC</li>
+<li>  Applies configuration requested</li>
+</ul>
+<p>The final final TST_Remove.ps1 is listed below.  <a href="/wp-content/uploads/2018/12/AzureRemove.png"><img src="/wp-content/uploads/2018/12/AzureRemove.png"></a> Below describes what each of these cmdlets do: RemoveAzureDSCNodeConfiguration</p>
+<ul>
+<li>  Removes Configuration from server</li>
+<li>  Unregisters server from Azure Automation DSC</li>
+</ul>
+<p>Remove-AzureLab</p>
+<ul>
+<li>  Removes Lab Resource Group and all items in ResouceGroup</li>
+</ul>
+<h2 id="Hyper-V-LabInaBox"><a href="#Hyper-V-LabInaBox" class="headerlink" title="Hyper-V LabInaBox"></a>Hyper-V LabInaBox</h2><p>Similarly you can generate a Lab onprem on a Hyper-V server.  In this case as mentioned before we will need Windows10 as well as a sysprepped image before we can move on.  Once we have these we can again click File…Open and select Default_Private_Config.json.  You should now be presented with a screen that looks like the following: <a href="/wp-content/uploads/2018/12/HyperVNew.png"><img src="/wp-content/uploads/2018/12/HyperVNew.png"></a> Similar to the Azure LabInaBox you may want to change a few properties here.  To Start Lab Machine Prefix similar to the Azure will drive how the folder structure is created for the scripts.  Unlike the Azure component this is prepended by default to all VMs which are created because we do not have a Resource Group to break them out we need to ensure we dont overlap Vms.  Moving down the list in this example I name the switch based on the subnet I am utilizing for the lab, this is not required but something I found easier to identify later.  As you move down the list there are Folder paths to set.  This allows you move things around if you have more than one drive in your machine and you want to segregate the IO workload.  Servers is just a comma separated list of server names you want created, keep in mind the lab prefix will be pre-pended to the name.   ISO selection allows you to mount ISOs as drives on the domain controller so you can install additional software later.  Once you select the ISO FOlder Path the values will populate in the drop down.  If we stop here in this example we will get three machines.  One Domain controller named PRV-DC and two windows servers named PRV-SQL1 and PRV-SQL2.  Our domain controller will have DHCP,DNS, AD, and certificate services configured so we are ready to begin playing with DSC configurations.  If we are looking for additional functionality we look at the last four boxes.  Developer Machine will create another windows machine PRV-DEV which will be leveraged for any scripting or development.  DSC Central will create an additional vm named PRV-DSC.  PRV-DSC will have a DSC configuration applied to it which installs SQL Server and sets up the <a target="_blank" rel="noopener" href="https://github.com/Microsoft/DSC-data-driven-deployment">DSC Data Driven Deployment</a> solution found on GitHub.  Clicking Finish as before will present us with the scripts which are generated. <a href="/wp-content/uploads/2018/12/HyperVfiles.png"><img src="/wp-content/uploads/2018/12/HyperVfiles.png"></a> Notice with Hyper-V we have several additional scripts which are generated.  With HyperV we have scripts to Start, Stop, Update, Create, Remove and Checkpoint a Lab.  Hyper-V scripts are setups the same as the Azure LabInabox in that each cmdlet also takes configuration as a parameter where configuration is a JSON.</p>
+<h2 id="Wrap-Up"><a href="#Wrap-Up" class="headerlink" title="Wrap-Up"></a>Wrap-Up</h2><p>All of the cmdlet code can be found in the one module LabInaBox.psm1.  In general my approach with here was to be able to easily and quickly generate a lab in Hyper-V or Azure.  With that being said all the PowerShell cmdlets can be used as examples of how you could automate your workloads in your environment.  Please feel free to comment or contribute to the solution on GitHub. Happy Automating till Next Time!</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2017/08/30/automating-lab-environments-with-labinabox-on-prem-or-in-the-cloud/" data-id="ckv2nrjl0000ep8ii4bechxye" data-title="Automating Lab Environments with LabInaBox on Prem or in the Cloud." class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Automation/" rel="tag">Automation</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/HyperV-Lab/" rel="tag">HyperV Lab</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/LabinaBox/" rel="tag">LabinaBox</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-utilizing-key-vault-to-create-credentials-for-automation" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2017/08/29/utilizing-key-vault-to-create-credentials-for-automation/" class="article-date">
+  <time class="dt-published" datetime="2017-08-29T12:42:51.000Z" itemprop="datePublished">2017-08-29</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Authentication/">Authentication</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2017/08/29/utilizing-key-vault-to-create-credentials-for-automation/">Utilizing Key Vault to create credentials for automation.</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>[Troy Ault](<a target="_blank" rel="noopener" href="https://social.msdn.microsoft.com/profile/Troy">https://social.msdn.microsoft.com/profile/Troy</a> Ault) 8/29/2017 12:42:21 PM</p>
+<hr>
+<p>Working with PowerShell I often find myself doing demos which require me to have some form of credentials or other sensitive data.  In the past I’ve used really generic passwords which are easy to work with but always leave a bad taste in your mouth because the passwords are stored in plain text.  Azure has a very nice service called Key Vault which is a great solution to this problem.  To demonstrate I put together a simple script to build a credential and then utilize the credential to login into a virtual machine which is hosted in Azure.</p>
+<h2 id="Prerequisites"><a href="#Prerequisites" class="headerlink" title="Prerequisites"></a>Prerequisites</h2><p>Prior to running this script you will need to have setup a way to automatically login to Azure, if you have not done this please read my previous log post <a target="_blank" rel="noopener" href="https://blogs.msdn.microsoft.com/troy_aults_blog/2017/08/21/loginazurewithoutprompt/">here</a> first. Next we will need a function called <a target="_blank" rel="noopener" href="https://gallery.technet.microsoft.com/scriptcenter/Connect-Mstsc-Open-RDP-2064b10b">Connect-Mstsc</a> which is available on the PowerShell Gallery.</p>
+<h2 id="Creating-The-Key-Vault"><a href="#Creating-The-Key-Vault" class="headerlink" title="Creating The Key Vault"></a>Creating The Key Vault</h2><p>First thing we need to do is setup Key Vault in our subscription.  You have a couple options we can do it online through the online through the portal or in PowerShell.  Since I lend to automation I will demonstrate PowerShell.  Below is an example script to setup your first Key Vault.  We will want to run the setup under our personal account so we have the ability to also add/update/delete to the Key Vault in the web.  For instance adding in new keys we will do online because its a onetime task and we don’t want our secrets in plain text.  So to enable this when setting up the Key Vault we will utilize Login-AzureRMAccount.  We capture the output into the variable $login so we can extract our accountid and grant ourselves all permissions to the secrets.  In addition we need to provide a couple of details to create.  We need to provide a name for the Key Vault, a resource group, and if we want to automate with PowerShell, we will also need to provide our Service Principal so we can grant it privileges. <strong>$login = Login-AzureRmAccount</strong> <strong>$KeyVaultName = ‘MyKeyVault100’</strong> <strong>$ResourceGroup = “$($KeyVaultName)RG”</strong> <strong>$location = ‘EastUS2’</strong> <strong>$ServicePrincipal = ‘<a target="_blank" rel="noopener" href="http://manageinternalazureapp&/#39;">http://ManageInternalAzureApp&#39;</a></strong> <strong>$UserPrincipal = $login.Context.Account.id</strong> <strong>New-AzureRmResourceGroup -Name $ResourceGroup -Location $location</strong> <strong>New-AzureRmKeyVault -VaultName $KeyVaultName -ResourceGroupName $ResourceGroup -Location $location</strong> <strong>Set-AzureRmKeyVaultAccessPolicy -VaultName $KeyVaultName -ServicePrincipalName $ServicePrincipal -PermissionsToSecrets get</strong> <strong>Set-AzureRmKeyVaultAccessPolicy -VaultName $KeyVaultName -userPrincipalName $UserPrincipal -PermissionsToSecrets all</strong> As you see above this script will create a new Resource Group, Key Vault and then grant privileges to the Key Vault.  For this demo it is granting my automation ServicePrincipal get only privileges.  Therefore utilizing my automation I will not be able to update or delete the secrets.  My credentials I logged in to create the Key Vault will have all permissions on Secrets which will give me the ability to add new/update/delete secrets from the portal. After running the script we now have a Key Vault and we need to go put some secrets in to retrieve.  Now browse to ResourceGroups&gt;MyKeyVault100RG&gt;MyKeyVault100.  Here we will see Assets (Keys, Secrets) and Monitoring (Access Policies).  First if we look at Access Policies we will see our application and user which we granted get and all privileges to above.  Next we will go to Secrets.  Here we want to click + Add change our upload options to Manual and fill in the required fields.   Below we see the required fields.  We will do this for both the AdminUser and AdminPass. <a href="m/wp-content/uploads/2018/12/Create-Secret.png"><img src="m/wp-content/uploads/2018/12/Create-Secret.png"></a> After we have added both of our secrets we can refresh our Secrets page and we should see something like below: <a href="m/wp-content/uploads/2018/12/KeyVaultSecrets.png"><img src="m/wp-content/uploads/2018/12/KeyVaultSecrets.png"></a></p>
+<h2 id="Accessing-Key-Vault"><a href="#Accessing-Key-Vault" class="headerlink" title="Accessing Key Vault"></a>Accessing Key Vault</h2><p>We are now ready to consume our secrets!!  We can make calls out to KeyVault and build a credential.  Below is some sample code showing this. <strong>Login-AzurebyCert</strong> <strong>$AdminUserName = ‘AdminUser’</strong> <strong>$AdminPassName = ‘AdminPass’</strong> <strong>$AdminUser = Get-AzureKeyVaultSecret -VaultName $KeyVaultName -Name $AdminUserName</strong> <strong>$AdminPass = Get-AzureKeyVaultSecret -VaultName $KeyVaultName -Name $AdminPassName</strong> <strong>$mycred = New-Object System.Management.Automation.PSCredential (“$($AdminUser.SecretValueText)”, $AdminPass.SecretValue)</strong> First we leverage Login-AzurebyCert which is explained in earlier post.  We define which secrets we want to retrieve in this case AdminUser and AdminPass.  We retrieve the values for these then build a credential from them.  After we run the above script if we take a look at $mycred we will see we now have a PSCredential. <a href="m/wp-content/uploads/2018/12/KeyvaultCred.png"><img src="m/wp-content/uploads/2018/12/KeyvaultCred.png"></a> I can now leverage this credential to pass to any other PowerShell cmdlet which takes a credential as an input.  For my example here I am going to pass it to a PowerShell function I referenced earlier <a target="_blank" rel="noopener" href="https://gallery.technet.microsoft.com/scriptcenter/Connect-Mstsc-Open-RDP-2064b10b">Connect-Mstsc</a> which will allow me to RDP into a windows machine.  This machine could be local in azure or any where for that matter.  I will be automatically logged in without having the need to know or pass credentials.  Below is the actual call. Connect-Mstsc -ComputerName 192.168.10.1:3389 -Credential $mycred Having the ability to store secrets helps aid in cleaning up our automation/demo scripts to ensure we are being good stewards of our sensitive data.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2017/08/29/utilizing-key-vault-to-create-credentials-for-automation/" data-id="ckv2nrjlt002rp8iidb8b2hqa" data-title="Utilizing Key Vault to create credentials for automation." class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Key-Vault/" rel="tag">Key Vault</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PowerShell/" rel="tag">PowerShell</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-automation-with-azure-how-to-securely-script-login" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2017/08/21/automation-with-azure-how-to-securely-script-login/" class="article-date">
+  <time class="dt-published" datetime="2017-08-21T15:53:44.000Z" itemprop="datePublished">2017-08-21</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Authentication/">Authentication</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2017/08/21/automation-with-azure-how-to-securely-script-login/">Automation with Azure? How to securely script login?</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>[Troy Ault](<a target="_blank" rel="noopener" href="https://social.msdn.microsoft.com/profile/Troy">https://social.msdn.microsoft.com/profile/Troy</a> Ault) 8/21/2017 3:53:17 PM</p>
+<hr>
+<p>Do you have a need to login to azure securely without being prompted?  Often times I am doing demos or writing automation routines which interact with Azure.  Typically you will see one of two things: </p>
+<ol>
+<li> Get-Credential</li>
+<li>$PlainPassword = “P@ssw0rd” $SecurePassword = $PlainPassword  ConvertTo-SecureString -AsPlainText -Force</li>
+</ol>
+<p>The first one is painful because it requires input from the user running the script and the second one well… is obviously not secure.  Since neither one of these are desirable for automation I went searching for a better solution.  What I found is described in the following article -&gt; <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-authenticate-service-principal">Use Azure PowerShell to create a service principal to access resources</a> Since i use this often I wrapped things into a couple of functions which exist in <a target="_blank" rel="noopener" href="https://github.com/Microsoft/DSC-data-driven-deployment/tree/dev/utility/LabInaBox">LabInaBox</a>.  The two functions I am going to talk about here are New-AzureCertAuthentication and Login-AzurebyCert. New-AzureCertAuthentication is called one time per subscription or resource group depending on how you are looking to secure the authentication.  The function has two mandatory parameters and two optional parameters.  ApplicationDisplayName is required and is the name of the service principal which will be created in your azure subscription which will be granted the permissions required.  You will find this under the subscriptions blade, followed by selecting the subscription then selecting Access control (IAM).  Here you will see the ApplicationDisplayName after you call the function.  Subject is the second required parameter which corresponds to the subject name of the self-signed certificate which will be generated and used for connecting to the service principal url which is created.  Once the function has been called you will find this certificate in the Current User personal certificate folder.  Subscription parameter is not required and will default to your default subscription if not passed.  Resource Group is also not required and should only be passed if you want your permission to be scoped to a particular resource group.  For LabinaBox and everything I do myself I want subscription access so I can create and remove resource groups.  If you have a need to scope at the resource group level the functionality is there.  So this provides up with three possible ways you can call this function which are documented below:</p>
+<ol>
+<li>Securing authentication to the Resource Group Level you would pass the following<ul>
+<li>  New-AzureCertAuthentication -ResourceGroup ‘MyResourceGroup’ -SubscriptionID ‘MySubscriptionID’ -ApplicationName ‘MyApplicationName’ -Subject ‘MyCertSubject’</li>
+</ul>
+</li>
+<li>Securing authentication to the Subscription level and passing the subscription you want to utilize.<ul>
+<li>  New-AzureCertAuthentication -SubscriptionID ‘MySubscriptionID’ -ApplicationName ‘MyApplicationName’ -Subject ‘MyCertSubject’</li>
+</ul>
+</li>
+<li>Securing authentication to the Subscription level using our default subscription<ul>
+<li>  New-AzureCertAuthentication -ApplicationName ‘MyApplicationName’ -Subject ‘MyCertSubject’</li>
+</ul>
+</li>
+</ol>
+<p>New-AzureCertAuthentication only needs to be called once.  When you call it it will prompt for your credentials to connect to your azure subscription.  After it completes it will want to capture the following information:</p>
+<ol>
+<li> Cert Subject - corresponds to Subject passed to New-AzureCertAuthentication</li>
+<li> ApplicationID - This is returned function</li>
+<li> TennantID -  This is returned from the function</li>
+</ol>
+<p>Now we have all the plumbing in place to connect to azure within a script from our machine.  We can simply call Login-AzurebyCert and pass three pieces of information and we will be connected to our subscription and be able to interact with any azure cmd-let.  Below is an example of a call :</p>
+<p>Import-module -name “C:YourPathtoModulemodulesLabinaBox.psm1”</p>
+<p>Login-AzurebyCert -Certsubject ‘MyCertSubject’ -ApplicationID ‘xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx’ -TennantID ‘xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx’ Because I wanted to easily be able to interact with Azure I modified my function to default to my certsubject, applicationid, and tennantid.  Simplifies if I am at PowerShell prompt and want a connection to my subscription. Stay tuned in my next article I will talk about utilizing this cmd-let and Azure Key Vault to build a credential and login to a Azure VM without being prompted.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2017/08/21/automation-with-azure-how-to-securely-script-login/" data-id="ckv2nrjl3000mp8ii4kwo0sgo" data-title="Automation with Azure? How to securely script login?" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Credential/" rel="tag">Credential</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Secure-Login/" rel="tag">Secure Login</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-creating-a-sql-container-thats-always-the-latest-build" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2017/05/02/creating-a-sql-container-thats-always-the-latest-build/" class="article-date">
+  <time class="dt-published" datetime="2017-05-02T13:07:53.000Z" itemprop="datePublished">2017-05-02</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Container/">Container</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2017/05/02/creating-a-sql-container-thats-always-the-latest-build/">Creating a SQL container that&#39;s always the Latest build</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="Creating-a-SQL-container-that’s-always-the-Latest-build"><a href="#Creating-a-SQL-container-that’s-always-the-Latest-build" class="headerlink" title="Creating a SQL container that’s always the Latest build"></a>Creating a SQL container that’s always the Latest build</h1><p>[Troy Ault](<a target="_blank" rel="noopener" href="https://social.msdn.microsoft.com/profile/Troy">https://social.msdn.microsoft.com/profile/Troy</a> Ault) 5/2/2017 1:07:00 PM</p>
+<hr>
+<p>Want to stay current with the latest SQL server builds so you can test new features?  Or want the ability to have a quick SQL instance up and running as a development environment?  Now with Docker for Windows and Windows 10 there is a quick and easy way to do both.  In this blog post I will walk through the steps to get you up and running and provide links to further get you familiar with containers.  First things first you will need to install Docker for Windows.  There is a great article you can find <a target="_blank" rel="noopener" href="https://docs.docker.com/docker-for-windows/#general">here</a>.  This will walk you through installing and all the options you have to configure.  If you are looking to do some automation you will want to enable at least one shared drive.  The article referenced above will walk you through this configuration as well.  Since we are building a SQL Server container make sure to configure Docker for a minimum of 4GB of memory as this is required for the container to start. Now that we have Docker running on windows we can leverage the PowerShell to enable a simple way to launch a development environment.  Ensure you have SQL Server PowerShell cmd-lets installed as the script references Invoke-SQLcmd.  To verify if you have it installed you can run get-command invoke-sqlcmd.  If you have it installed it will return a record with the Source.  In my case I have it from SQLPS.  If it does not find it you can install the latest SQLServer PowerShell module by running install-module sqlserver. What I have done is created a script and placed it on my desktop.  I right click the script and execute with PowerShell.  The script checks if I currently have the container created if so it will remove it then check to ensure I have the latest SQL Server bits if not it will update them.  Once updated it will create a new container mapping the shared drive we created earlier.  Note I shared my d drive and I created a folder off the root called Docker.  Anything I place in this directory will be available to my container located in the following path in my container /volumes/docker.  Now I have a container running SQL Server and I will loop until SQL Server can get a consistent connection for three attempts.  Once I have a good connection I will restore the backup I have placed in my shared folder.  Notice I need to redirect my paths so SQL Server knows where to place them in my container.  Finally I launch SQL Server Management studio so we can connect and do some testing. Once you are in SSMS if you would like to change any of server configuration properties you can do that with the exception of SQL Server Authentication, it is the only security mode you can run.  SQL on linux container provides the core sql engine,  if you need SSAS, SSIS, SSRS these are not included in the container. Now anytime I want to test with the latest SQL Server bits I simple run one PowerShell script and within a couple seconds I have a new instance of SQL Server with a database I can query. $Container = ‘LatestSQL’ $Database = “AdventureWorks2016CTP3” #Check for existance of Container $Current = docker ps –filter “name=$Container” #Remove our current container so we can replace it if ($Current){docker rm -v $Container -f} #pulls latest sql docker image docker pull microsoft/mssql-server-linux #Creates new container using the latest bits docker run -v d:Docker://volumes/Docker –name $Container -e ‘ACCEPT_EULA=Y’ -e ‘SA_PASSWORD=P@ssw0rd’ -p 1433:1433 -d microsoft/mssql-server-linux #Loop until SQL is up Do { try {Start-Sleep -Seconds 2 $Test = Invoke-Sqlcmd -ServerInstance . -U sa -P P@ssw0rd -Query “Select @@version” -ErrorAction SilentlyContinue if ($test) {$loop = $loop+1} } catch {Write-Output “Waiting for SQL to Start….”} } until ($loop -eq 3) #Restore a backup of my Sample Database Write-Output “Restoring Database to SQL Server….” $Query =”RESTORE DATABASE [$($Database)] FROM DISK = N’/volumes/Docker/$($Database).bak’ WITH FILE = 1, MOVE N’$($Database)_Data’ TO N’/var/opt/mssql/data$($Database)_Data.mdf’, ` MOVE N’$($Database)_Log’ TO N’/var/opt/mssql/data$($Database)_Log.ldf’, MOVE N’$($Database)_mod’ TO N’/var/opt/mssql/data$($Database)_mod’, NOUNLOAD, STATS = 5” Invoke-Sqlcmd -ServerInstance . -U sa -P P@ssw0rd -Query $Query #Launch SSMS Invoke-Item “C:Program Files (x86)Microsoft SQL Server140ToolsBinnManagementStudioSsms.exe”</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2017/05/02/creating-a-sql-container-thats-always-the-latest-build/" data-id="ckv2nrjl90016p8ii45ow49ee" data-title="Creating a SQL container that&#39;s always the Latest build" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Current-SQL-Build/" rel="tag">Current SQL Build</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SQL-Container/" rel="tag">SQL Container</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SQL-Linux/" rel="tag">SQL Linux</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-automating-installation-of-ssms-with-dsc" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2017/01/13/automating-installation-of-ssms-with-dsc/" class="article-date">
+  <time class="dt-published" datetime="2017-01-13T08:40:22.000Z" itemprop="datePublished">2017-01-13</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/DSC/">DSC</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2017/01/13/automating-installation-of-ssms-with-dsc/">Automating installation of SSMS with DSC</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>[Troy Ault](<a target="_blank" rel="noopener" href="https://social.msdn.microsoft.com/profile/Troy">https://social.msdn.microsoft.com/profile/Troy</a> Ault) 1/13/2017 8:40:20 AM</p>
+<hr>
+<p>Over the past few months I’ve had a couple of customers ask me, “Now that SQL 2016 doesn’t include SSMS how am I supposed to automate the installation?”.  Typically my response is you shouldn’t be installing it on your servers as its just an additional item that will require patching.  However there are times its necessary and often times customers have dedicated management servers where they want to automate the installation or you want to automate it on your workstation.  Either way DSC is here to assist, installing any .exe or .msi with DSC is relatively simple with the Package resource which is included with DSC.  There are likely other pieces of software you may want to automate on your SQL installations also.  Here I am providing a code example of specifically how SSMS can be installed but it can be modified for other uses.  This is again “Sample Code” so you will notice I am allowing for the use of plain text passwords, not something you would want to do in a production environment.</p>
+<p>This is a simple configuration, its only intended purpose is to install SSMS.  To do this there are only a couple of parameters you will need to set.</p>
+<p>Name: Actual file name of the package we want to install</p>
+<p>Path: Full path to the executable or msi we want to install.</p>
+<p>Arguments:  This is an optional parameter but required for SSMS so it doesn’t generate prompts on install</p>
+<p>ProductId: This is the GUID found in the uninstall key of the registry.  This allows DSE to remove the software if we set Ensure to “Absent”</p>
+<p>Credential:  Credential of the user which has the privileges to install the software.</p>
+<p><a href="/wp-content/uploads/2018/12/DevConfigPic.jpg"><img src="/wp-content/uploads/2018/12/DevConfigPic.jpg" alt="devconfigpic"></a></p>
+<p>Adding a link to the file as formatting is getting lost when pasted into the blog.</p>
+<p>For reference below is the link for additional details on the Package Resource.</p>
+<p><a target="_blank" rel="noopener" href="https://msdn.microsoft.com/en-us/powershell/dsc/packageResource">https://msdn.microsoft.com/en-us/powershell/dsc/packageResource</a></p>
+<p>DSC has a lot of flexibility for automating your infrastructure stay tuned next I will be talking about modifying environment Variables and running PowerShell scripts with DSC.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2017/01/13/automating-installation-of-ssms-with-dsc/" data-id="ckv2nrjky000cp8iih62n2ame" data-title="Automating installation of SSMS with DSC" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Automated-SSMS/" rel="tag">Automated SSMS</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SSMS-Install/" rel="tag">SSMS Install</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+
+
+  <nav id="page-nav">
+    
+    <a class="extend prev" rel="prev" href="/">&laquo; Prev</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/3/">Next &raquo;</a>
+  </nav>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/About-Me/">About Me</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/AlwaysOn/">AlwaysOn</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Authentication/">Authentication</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Azure/">Azure</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Container/">Container</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/DSC/">DSC</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Lab/">Lab</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/SQL-Server/">SQL Server</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/">azure</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/">Azure Data Factory</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/Logic-App/">Logic App</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/Logic-App/SSIS/">SSIS</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/SSIS/">SSIS</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/SQL/">SQL</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/uncategorized/">uncategorized</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ARM/" rel="tag">ARM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/AlwaysOn/" rel="tag">AlwaysOn</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-Lab/" rel="tag">Automated Lab</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-SQL-Install/" rel="tag">Automated SQL Install</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-SSMS/" rel="tag">Automated SSMS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automation/" rel="tag">Automation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure/" rel="tag">Azure</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Automation/" rel="tag">Azure Automation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Data-Factory/" rel="tag">Azure Data Factory</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Resource-Manager/" rel="tag">Azure Resource Manager</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cloud/" rel="tag">Cloud</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Credential/" rel="tag">Credential</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Current-SQL-Build/" rel="tag">Current SQL Build</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Custom-Integration-Runtime/" rel="tag">Custom Integration Runtime</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DSC/" rel="tag">DSC</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DSC-at-Scale/" rel="tag">DSC at Scale</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Desired-State-Configuration/" rel="tag">Desired State Configuration</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DevOps/" rel="tag">DevOps</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HyperV-Lab/" rel="tag">HyperV Lab</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Key-Vault/" rel="tag">Key Vault</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LabinaBox/" rel="tag">LabinaBox</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Manged-Instance/" rel="tag">Manged Instance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Migration/" rel="tag">Migration</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PowerShell/" rel="tag">PowerShell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL/" rel="tag">SQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Container/" rel="tag">SQL Container</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Linux/" rel="tag">SQL Linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Server/" rel="tag">SQL Server</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSIS/" rel="tag">SSIS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSMS-Install/" rel="tag">SSMS Install</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Secure-Login/" rel="tag">Secure Login</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/TDE/" rel="tag">TDE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Testing-Environement/" rel="tag">Testing Environement</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/ARM/" style="font-size: 13.33px;">ARM</a> <a href="/tags/AlwaysOn/" style="font-size: 13.33px;">AlwaysOn</a> <a href="/tags/Automated-Lab/" style="font-size: 10px;">Automated Lab</a> <a href="/tags/Automated-SQL-Install/" style="font-size: 15px;">Automated SQL Install</a> <a href="/tags/Automated-SSMS/" style="font-size: 10px;">Automated SSMS</a> <a href="/tags/Automation/" style="font-size: 11.67px;">Automation</a> <a href="/tags/Azure/" style="font-size: 11.67px;">Azure</a> <a href="/tags/Azure-Automation/" style="font-size: 10px;">Azure Automation</a> <a href="/tags/Azure-Data-Factory/" style="font-size: 10px;">Azure Data Factory</a> <a href="/tags/Azure-Resource-Manager/" style="font-size: 10px;">Azure Resource Manager</a> <a href="/tags/Cloud/" style="font-size: 10px;">Cloud</a> <a href="/tags/Credential/" style="font-size: 10px;">Credential</a> <a href="/tags/Current-SQL-Build/" style="font-size: 10px;">Current SQL Build</a> <a href="/tags/Custom-Integration-Runtime/" style="font-size: 10px;">Custom Integration Runtime</a> <a href="/tags/DSC/" style="font-size: 20px;">DSC</a> <a href="/tags/DSC-at-Scale/" style="font-size: 10px;">DSC at Scale</a> <a href="/tags/Desired-State-Configuration/" style="font-size: 16.67px;">Desired State Configuration</a> <a href="/tags/DevOps/" style="font-size: 10px;">DevOps</a> <a href="/tags/HyperV-Lab/" style="font-size: 10px;">HyperV Lab</a> <a href="/tags/Key-Vault/" style="font-size: 10px;">Key Vault</a> <a href="/tags/LabinaBox/" style="font-size: 10px;">LabinaBox</a> <a href="/tags/Manged-Instance/" style="font-size: 10px;">Manged Instance</a> <a href="/tags/Migration/" style="font-size: 10px;">Migration</a> <a href="/tags/PowerShell/" style="font-size: 13.33px;">PowerShell</a> <a href="/tags/SQL/" style="font-size: 13.33px;">SQL</a> <a href="/tags/SQL-Container/" style="font-size: 10px;">SQL Container</a> <a href="/tags/SQL-Linux/" style="font-size: 10px;">SQL Linux</a> <a href="/tags/SQL-Server/" style="font-size: 18.33px;">SQL Server</a> <a href="/tags/SSIS/" style="font-size: 10px;">SSIS</a> <a href="/tags/SSMS-Install/" style="font-size: 10px;">SSMS Install</a> <a href="/tags/Secure-Login/" style="font-size: 10px;">Secure Login</a> <a href="/tags/TDE/" style="font-size: 10px;">TDE</a> <a href="/tags/Testing-Environement/" style="font-size: 10px;">Testing Environement</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/07/">July 2021</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/08/">August 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/03/">March 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/10/">October 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/08/">August 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/05/">May 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/01/">January 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/11/">November 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/09/">September 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">August 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/06/">June 2015</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2021/07/07/automated-oracle-infrastructure-as-code-in-azure/">Oracle Infrastructure as Code in Azure</a>
+          </li>
+        
+          <li>
+            <a href="/2020/08/16/azure-devops-for-the-data-engineer-part-2/">Azure DevOps for the Data Engineer Part 2</a>
+          </li>
+        
+          <li>
+            <a href="/2020/08/10/azure-devops-for-the-data-engineer-part-1/">Azure DevOps for the Data Engineer Part 1</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/31/default-kit/">Default Kit</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/19/moving-databases-with-tde-to-azure-sql-managed-instance/">Moving Databases with TDE to Azure SQL Managed Instance</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2021 Troy Ault<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>

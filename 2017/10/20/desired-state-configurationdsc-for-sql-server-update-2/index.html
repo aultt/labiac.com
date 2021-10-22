@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>Desired State Configuration(DSC) for SQL Server ***Update 2 | Automation One Day at a Time</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="[Troy Ault](https:&#x2F;&#x2F;social.msdn.microsoft.com&#x2F;profile&#x2F;Troy Ault) 10&#x2F;20&#x2F;2017 3:16:29 PM    Following up from my last post I have published the Failover Cluster Instance composite configurations and upd">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Desired State Configuration(DSC) for SQL Server ***Update 2">
+<meta property="og:url" content="http://example.com/2017/10/20/desired-state-configurationdsc-for-sql-server-update-2/index.html">
+<meta property="og:site_name" content="Automation One Day at a Time">
+<meta property="og:description" content="[Troy Ault](https:&#x2F;&#x2F;social.msdn.microsoft.com&#x2F;profile&#x2F;Troy Ault) 10&#x2F;20&#x2F;2017 3:16:29 PM    Following up from my last post I have published the Failover Cluster Instance composite configurations and upd">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/wp-content/uploads/2018/12/th.jpg">
+<meta property="article:published_time" content="2017-10-20T15:16:01.000Z">
+<meta property="article:modified_time" content="2021-10-22T17:39:12.121Z">
+<meta property="article:author" content="Troy Ault">
+<meta property="article:tag" content="DSC">
+<meta property="article:tag" content="Automated SQL Install">
+<meta property="article:tag" content="Desired State Configuration">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/wp-content/uploads/2018/12/th.jpg">
+  
+    <link rel="alternate" href="/atom.xml" title="Automation One Day at a Time" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/typeface-source-code-pro@0.0.71/index.min.css">
+
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Automation One Day at a Time</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-desired-state-configurationdsc-for-sql-server-update-2" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2017/10/20/desired-state-configurationdsc-for-sql-server-update-2/" class="article-date">
+  <time class="dt-published" datetime="2017-10-20T15:16:01.000Z" itemprop="datePublished">2017-10-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/DSC/">DSC</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      Desired State Configuration(DSC) for SQL Server ***Update 2
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>[Troy Ault](<a target="_blank" rel="noopener" href="https://social.msdn.microsoft.com/profile/Troy">https://social.msdn.microsoft.com/profile/Troy</a> Ault) 10/20/2017 3:16:29 PM</p>
+<hr>
+<p><a href="/wp-content/uploads/2018/12/th.jpg"><img src="/wp-content/uploads/2018/12/th.jpg"></a>  Following up from my last post I have published the Failover Cluster Instance composite configurations and updated the previous configurations.  Initially lets talk about the updates to the which were pushed. Single Instance, Primary AlwaysOn,  and Secondary AlwaysOn  all had additional optional parameters added enabling all configurable items to be leveraged.  Each of these are defaulted so no breaking changes to the previous examples but additional flexibility added. Lets move on to Failover Cluster Instance as this has been one I have gotten several questions on how to leverage.  Utilizing the SQLCompositeResources module there are three new resources which will be utilized to build a Failover Cluster Instance <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/tree/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterDisk">FailOverClusterDisk</a>, <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/tree/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterInstanceFirstNode">FailOverClusterInstanceFirstNode</a>, and <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/tree/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterInstanceAdditionalNode">FailOverClusterInstanceAdditionalNode</a>.  To show how they can be leveraged we will walk through the example provided for <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/tree/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterInstanceFirstNode">FailOverClusterInstanceFirstNode</a> and <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/tree/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterInstanceAdditionalNode">FailOverClusterInstanceAdditionalNode</a>.</p>
+<h2 id="Failover-Cluster-Instance-First-Node"><a href="#Failover-Cluster-Instance-First-Node" class="headerlink" title="Failover Cluster Instance First Node"></a>Failover Cluster Instance First Node</h2><p>First resource we will cover this time is <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterInstanceFirstNode/Examples/FailOverClusterInstanceFirstNode_Example.ps1">FailOverClusterInstanceFirstNode_Example.ps1</a>. As in the previous post Credential Management and LCM Config are identical so I will not cover these again.</p>
+<h3 id="Metadata-CofigData"><a href="#Metadata-CofigData" class="headerlink" title="Metadata ($CofigData)"></a>Metadata ($CofigData)</h3><p>Here we need to provide a few more data elements than we did previously.  Unlike our previous builds we have to provide an installation path for our SQL Server database and logs files as these are required to reside on a shared disk.  Since at least one shared disk is required we need to provide the disk layout and how each drive should be labeled.  To simplify we do this by providing a key of DiskConfiguration and passing an array of hashtable values.  Each hashtable will provide the parameters FailOverClusterDisk requires. Finally we need to provide a name for our FCI and the IPaddress.</p>
+<h3 id="SQL-Server-Configuration"><a href="#SQL-Server-Configuration" class="headerlink" title="SQL Server Configuration"></a>SQL Server Configuration</h3><p>The main section is the SQL Configuration and its a simple call.  One call to  <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/tree/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterInstanceFirstNode">FailOverClusterInstanceFirstNode</a> will ensure the following:</p>
+<ol>
+<li> Ensure Failover Cluster feature is installed on the machine</li>
+<li> Ensures disks partitions are created, formatted and added to the cluster.  This is accomplished by calling <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/tree/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterDisk">FailOverClusterDisk</a></li>
+<li> Ensure .Net framework is present</li>
+<li> Installs Failover Cluster Instance of SQL Server</li>
+<li> Configures SQL FCI</li>
+</ol>
+<p>To complete the example Resources are moved and the configuration is generated and deployed.</p>
+<h2 id="Failover-Cluster-Instance-Additional-Node"><a href="#Failover-Cluster-Instance-Additional-Node" class="headerlink" title="Failover Cluster Instance Additional Node"></a>Failover Cluster Instance Additional Node</h2><p>Next we will look at <strong><a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterInstanceAdditionalNode/Examples/FailOverClusterInstanceAdditionalNode_Example.ps1">FailOverClusterInstanceAdditionalNode_Example.ps1</a></strong> </p>
+<h3 id="Metadata-CofigData-1"><a href="#Metadata-CofigData-1" class="headerlink" title="Metadata ($CofigData)"></a>Metadata ($CofigData)</h3><p>Since we are adding to an existing cluster, we have a much smaller set required.  All required values are listed in <strong><a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterInstanceAdditionalNode/Examples/FailOverClusterInstanceAdditionalNode_Example.ps1">FailOverClusterInstanceAdditionalNode_Example.ps1</a> .</strong></p>
+<h3 id="SQL-Server-Configuration-1"><a href="#SQL-Server-Configuration-1" class="headerlink" title="SQL Server Configuration"></a>SQL Server Configuration</h3><p>The main section for SQL Configuration is again simple, a singe call to FailOverClusterInstanceAdditionalNode.  Calling <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/tree/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterInstanceAdditionalNode">FailOverClusterInstanceAdditionalNode</a> will do the following:</p>
+<ol>
+<li> Ensure Failover Cluster feature is installed on the machine</li>
+<li> Wait for the cluster created from <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/FailOverClusterInstanceFirstNode/Examples/FailOverClusterInstanceFirstNode_Example.ps1">Fail</a>OverClusterInstanceFirstNode to be found</li>
+<li> Join the cluster</li>
+<li> Ensure .Net framework is present</li>
+<li> Add node to SQL FCI</li>
+</ol>
+<p>To complete the example Resources are moved and the configuration is generated and deployed. With the addition of these composite resources I hope building out new SQL configurations will be simpler and have less redundancy.  Please let me know if you have issues or recommendations for improvement.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2017/10/20/desired-state-configurationdsc-for-sql-server-update-2/" data-id="ckv2nrjlc001hp8iic3sthgqv" data-title="Desired State Configuration(DSC) for SQL Server ***Update 2" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Automated-SQL-Install/" rel="tag">Automated SQL Install</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/DSC/" rel="tag">DSC</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Desired-State-Configuration/" rel="tag">Desired State Configuration</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/01/01/sql-server-modern-data-platform/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          SQL Server Modern Data Platform
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2017/10/09/desired-state-configurationdsc-for-sql-server-update/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Desired State Configuration(DSC) for SQL Server ***Update</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/About-Me/">About Me</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/AlwaysOn/">AlwaysOn</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Authentication/">Authentication</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Azure/">Azure</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Container/">Container</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/DSC/">DSC</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Lab/">Lab</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/SQL-Server/">SQL Server</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/">azure</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/">Azure Data Factory</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/Logic-App/">Logic App</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/Logic-App/SSIS/">SSIS</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/SSIS/">SSIS</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/SQL/">SQL</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/uncategorized/">uncategorized</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ARM/" rel="tag">ARM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/AlwaysOn/" rel="tag">AlwaysOn</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-Lab/" rel="tag">Automated Lab</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-SQL-Install/" rel="tag">Automated SQL Install</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-SSMS/" rel="tag">Automated SSMS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automation/" rel="tag">Automation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure/" rel="tag">Azure</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Automation/" rel="tag">Azure Automation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Data-Factory/" rel="tag">Azure Data Factory</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Resource-Manager/" rel="tag">Azure Resource Manager</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cloud/" rel="tag">Cloud</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Credential/" rel="tag">Credential</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Current-SQL-Build/" rel="tag">Current SQL Build</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Custom-Integration-Runtime/" rel="tag">Custom Integration Runtime</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DSC/" rel="tag">DSC</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DSC-at-Scale/" rel="tag">DSC at Scale</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Desired-State-Configuration/" rel="tag">Desired State Configuration</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DevOps/" rel="tag">DevOps</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HyperV-Lab/" rel="tag">HyperV Lab</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Key-Vault/" rel="tag">Key Vault</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LabinaBox/" rel="tag">LabinaBox</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Manged-Instance/" rel="tag">Manged Instance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Migration/" rel="tag">Migration</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PowerShell/" rel="tag">PowerShell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL/" rel="tag">SQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Container/" rel="tag">SQL Container</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Linux/" rel="tag">SQL Linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Server/" rel="tag">SQL Server</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSIS/" rel="tag">SSIS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSMS-Install/" rel="tag">SSMS Install</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Secure-Login/" rel="tag">Secure Login</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/TDE/" rel="tag">TDE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Testing-Environement/" rel="tag">Testing Environement</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/ARM/" style="font-size: 13.33px;">ARM</a> <a href="/tags/AlwaysOn/" style="font-size: 13.33px;">AlwaysOn</a> <a href="/tags/Automated-Lab/" style="font-size: 10px;">Automated Lab</a> <a href="/tags/Automated-SQL-Install/" style="font-size: 15px;">Automated SQL Install</a> <a href="/tags/Automated-SSMS/" style="font-size: 10px;">Automated SSMS</a> <a href="/tags/Automation/" style="font-size: 11.67px;">Automation</a> <a href="/tags/Azure/" style="font-size: 11.67px;">Azure</a> <a href="/tags/Azure-Automation/" style="font-size: 10px;">Azure Automation</a> <a href="/tags/Azure-Data-Factory/" style="font-size: 10px;">Azure Data Factory</a> <a href="/tags/Azure-Resource-Manager/" style="font-size: 10px;">Azure Resource Manager</a> <a href="/tags/Cloud/" style="font-size: 10px;">Cloud</a> <a href="/tags/Credential/" style="font-size: 10px;">Credential</a> <a href="/tags/Current-SQL-Build/" style="font-size: 10px;">Current SQL Build</a> <a href="/tags/Custom-Integration-Runtime/" style="font-size: 10px;">Custom Integration Runtime</a> <a href="/tags/DSC/" style="font-size: 20px;">DSC</a> <a href="/tags/DSC-at-Scale/" style="font-size: 10px;">DSC at Scale</a> <a href="/tags/Desired-State-Configuration/" style="font-size: 16.67px;">Desired State Configuration</a> <a href="/tags/DevOps/" style="font-size: 10px;">DevOps</a> <a href="/tags/HyperV-Lab/" style="font-size: 10px;">HyperV Lab</a> <a href="/tags/Key-Vault/" style="font-size: 10px;">Key Vault</a> <a href="/tags/LabinaBox/" style="font-size: 10px;">LabinaBox</a> <a href="/tags/Manged-Instance/" style="font-size: 10px;">Manged Instance</a> <a href="/tags/Migration/" style="font-size: 10px;">Migration</a> <a href="/tags/PowerShell/" style="font-size: 13.33px;">PowerShell</a> <a href="/tags/SQL/" style="font-size: 13.33px;">SQL</a> <a href="/tags/SQL-Container/" style="font-size: 10px;">SQL Container</a> <a href="/tags/SQL-Linux/" style="font-size: 10px;">SQL Linux</a> <a href="/tags/SQL-Server/" style="font-size: 18.33px;">SQL Server</a> <a href="/tags/SSIS/" style="font-size: 10px;">SSIS</a> <a href="/tags/SSMS-Install/" style="font-size: 10px;">SSMS Install</a> <a href="/tags/Secure-Login/" style="font-size: 10px;">Secure Login</a> <a href="/tags/TDE/" style="font-size: 10px;">TDE</a> <a href="/tags/Testing-Environement/" style="font-size: 10px;">Testing Environement</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/07/">July 2021</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/08/">August 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/03/">March 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/10/">October 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/08/">August 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/05/">May 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/01/">January 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/11/">November 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/09/">September 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">August 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/06/">June 2015</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2021/07/07/automated-oracle-infrastructure-as-code-in-azure/">Oracle Infrastructure as Code in Azure</a>
+          </li>
+        
+          <li>
+            <a href="/2020/08/16/azure-devops-for-the-data-engineer-part-2/">Azure DevOps for the Data Engineer Part 2</a>
+          </li>
+        
+          <li>
+            <a href="/2020/08/10/azure-devops-for-the-data-engineer-part-1/">Azure DevOps for the Data Engineer Part 1</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/31/default-kit/">Default Kit</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/19/moving-databases-with-tde-to-azure-sql-managed-instance/">Moving Databases with TDE to Azure SQL Managed Instance</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2021 Troy Ault<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>

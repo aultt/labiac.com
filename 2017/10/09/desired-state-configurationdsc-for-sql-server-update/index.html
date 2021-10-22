@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>Desired State Configuration(DSC) for SQL Server ***Update | Automation One Day at a Time</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="[Troy Ault](https:&#x2F;&#x2F;social.msdn.microsoft.com&#x2F;profile&#x2F;Troy Ault) 10&#x2F;9&#x2F;2017 6:04:53 PM   Over the past few months several individuals&#x2F;customers have asked me for updated examples of the latest xSQLServ">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Desired State Configuration(DSC) for SQL Server ***Update">
+<meta property="og:url" content="http://example.com/2017/10/09/desired-state-configurationdsc-for-sql-server-update/index.html">
+<meta property="og:site_name" content="Automation One Day at a Time">
+<meta property="og:description" content="[Troy Ault](https:&#x2F;&#x2F;social.msdn.microsoft.com&#x2F;profile&#x2F;Troy Ault) 10&#x2F;9&#x2F;2017 6:04:53 PM   Over the past few months several individuals&#x2F;customers have asked me for updated examples of the latest xSQLServ">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/wp-content/uploads/2018/12/SuperManPS.jpg">
+<meta property="og:image" content="http://example.com/2017/10/09/desired-state-configurationdsc-for-sql-server-update/media/2017/10/SQLCompositePath.png">
+<meta property="article:published_time" content="2017-10-09T18:04:09.000Z">
+<meta property="article:modified_time" content="2021-10-22T17:39:12.122Z">
+<meta property="article:author" content="Troy Ault">
+<meta property="article:tag" content="DSC">
+<meta property="article:tag" content="Automated SQL Install">
+<meta property="article:tag" content="Desired State Configuration">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/wp-content/uploads/2018/12/SuperManPS.jpg">
+  
+    <link rel="alternate" href="/atom.xml" title="Automation One Day at a Time" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/typeface-source-code-pro@0.0.71/index.min.css">
+
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Automation One Day at a Time</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-desired-state-configurationdsc-for-sql-server-update" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2017/10/09/desired-state-configurationdsc-for-sql-server-update/" class="article-date">
+  <time class="dt-published" datetime="2017-10-09T18:04:09.000Z" itemprop="datePublished">2017-10-09</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/DSC/">DSC</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      Desired State Configuration(DSC) for SQL Server ***Update
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>[Troy Ault](<a target="_blank" rel="noopener" href="https://social.msdn.microsoft.com/profile/Troy">https://social.msdn.microsoft.com/profile/Troy</a> Ault)</p>
+<p>10/9/2017 6:04:53 PM</p>
+<hr>
+<p><img src="/wp-content/uploads/2018/12/SuperManPS.jpg"> Over the past few months several individuals/customers have asked me for updated examples of the latest xSQLServer Resource.  As of this post, the current version is 8.2.0.0.  Throughout this post I will provide reference to configurations which are actually calling composite resources.  If you haven’t heard of composite resources, then the following reference will explain what they are and how they can be leveraged –&gt;   <a target="_blank" rel="noopener" href="http://blogs.msdn.com/b/powershell/archive/2014/02/25/reusing-existing-configuration-scripts-in-powershell-desired-state-configuration.aspx">Reusing existing configuration scripts in powershell desired state configuration</a> Before getting started, we will need to pull down a module with the required composite resources.  On my GitHub repro (located <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources">here</a>) you will find a module which has composite resources for stand alone SQL installation, AlwaysOn SQL Installation, and coming soon SQL Fail Over Cluster Instance (FCI).  Download the Zip, extract the contents and copy the SQLCompositeResources folder to C:Program FilesWindowsPowerShellModules.  Aside from this module, you will also need xSQLServer, xComputerManagement, xFailoverCluster as the composite resources will utilize these resources.  All example configurations are demonstrated utilizing a push configuration and assume the machine you are pushing from has the above referenced modules located in the PowerShell modules folder referenced previously. ***Update ensure the folder you copy is SQLCompositeResources, once you copy you should have something which looks like the below. <a href="media/2017/10/SQLCompositePath.png"><img src="media/2017/10/SQLCompositePath.png"></a></p>
+<h2 id="Single-Instance-Install-Example"><a href="#Single-Instance-Install-Example" class="headerlink" title="Single Instance Install Example"></a>Single Instance Install Example</h2><h4 id="Credential-Management"><a href="#Credential-Management" class="headerlink" title="Credential Management"></a>Credential Management</h4><p>We will first cover the simplest configuration <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/SingleInstanceInstall/Examples/SingleInstanceInstall_Example.ps1">SingleInstanceInstall_Example.ps1</a>.  Let’s look through what this configuration includes. First section of the script defines the credential objects we will pass to our configurations.  In the example referenced, the same password is leveraged for each of the three windows accounts and is stored clear text  in the script.  This is done for demonstration purposes only.  Please do not leverage this method in a production environment.  All examples referenced in this post were tested utilizing <a target="_blank" rel="noopener" href="https://github.com/Microsoft/DSC-data-driven-deployment/tree/dev/utility/LabInaBox">LabInabox</a>.</p>
+<h4 id="Metadata-CofigData"><a href="#Metadata-CofigData" class="headerlink" title="Metadata ($CofigData)"></a>Metadata ($CofigData)</h4><p>These are the variables that must be changed in order for the configuration to function properly.  First three are our service accounts which are referenced above, provided we updated these we can move on to the next items.  MofPath is the location where our Mof files will be created in.  SetupSourcePath is the location of our SQL Server installation media.  For my purposes I mounted the ISO to the domain controller and shared the location for my other machines.  And finally we have SQLSysAdminAccounts, here I have utilized DSCAdministrator which is my domain admin account in my DSC Lab environment.  This is not needed just the account I was logging into the machine with at the time.  This could be a domain group such as your SQL administrator group.  The last parameter needed to complete our metadata is NodeName.  NodeName is the machine we are looking to push the configuration too, in my case it was DSC-SQL6.  We now have all the required parameters defined that are required.  I know many are reading and saying but wait there are so many more things required, and in one way you are correct, however, in this case many have been defaulted.  Taking a look at the module for SingleInstanceInstall.schema.psm1 we will see there are many parameters defined such as installation directory which are defaulted just as they are typically if we were to run through a GUI install.  Any parameter you see here can be defined in our configuration.  Since we do not define them here they will utilize the default values.</p>
+<h4 id="LCM-Config"><a href="#LCM-Config" class="headerlink" title="LCM Config"></a>LCM Config</h4><p>Local configuration manager is configured as part of the example to ensure it is only Applying the configuration and the LCM is set in a Push mode.  For your production workload this could vary and can be modified as needed.</p>
+<h4 id="SQL-Server-Configuration"><a href="#SQL-Server-Configuration" class="headerlink" title="SQL Server Configuration"></a>SQL Server Configuration</h4><p>Our SQL configuration looks very simplified here as there is not much required for input.  Under the covers there is a lot more going on than meets the eye.  As stated above, we are utilizing a composite resource here called SingleinstanceIntall.  We are provided only a handful of parameters which are required and relying on the default values for all other parameters.  As stated above, you can pass the additional parameters if needed/required.  Lets dig further into what the composite resource SingleInstanceInstall provides us.  If we look at he psm1 module referenced above we will see this composite resource makes a call to xSQLServerSetup which is a resource from the xSQLServer module and a call so <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/SQLConfiguration/SQLConfiguration.schema.psm1">SQLConfiguration</a> which is a resource from SQLCompositeResources.  Digging deeper into <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/SQLConfiguration/SQLConfiguration.schema.psm1">SQLConfiguration</a> we see it does more than what it appears at first.  Looking through this resource we can see it does the following:</p>
+<ol>
+<li> Sets PowerPlan to High Performance</li>
+<li> Sets Virtualmemory initial and maximum size for windows</li>
+<li> Sets SQL Server memory</li>
+<li> Sets SQL Server MaxDop</li>
+<li> Enables TCP for SQL Server listening on 1433 or the port passed</li>
+<li> And finally sets 10 different SQL Server Configuration items based on the paramaters supplied.</li>
+</ol>
+<p>To recap a single call to: SingleInstanceInstall Standalone { Server = $Node.Nodename SetupSourcePath = $Node.SetupSourcePath SQLSysAdminAccounts = $Node.SQLSysAdminAccounts SqlInstallCredential = $Node.SqlInstallCredential SqlServiceCredential = $Node.SqlServiceCredential SqlAgentServiceCredential = $Node.SqlAgentServiceCredential } will give us a completely configured stand along SQL server ready to go.</p>
+<h4 id="Move-Resources"><a href="#Move-Resources" class="headerlink" title="Move Resources"></a>Move Resources</h4><p>Since we are in a push mode, we need to ensure all of our modules exist on on client before we push our configuration.  In this section we are simply utilizing test-path to verify the if the module exists and if so remove before copying the module with copy-item.</p>
+<h4 id="Generate-and-Deploy"><a href="#Generate-and-Deploy" class="headerlink" title="Generate and Deploy"></a>Generate and Deploy</h4><p>Finally we call the configuration to generate the mof file and start the configuration and wait for verbose output. Next we will talk about AlwaysOn, there are two configurations here PrimaryAlwaysOn and SecondaryAlwaysOn.  As the names imply PrimaryAlwaysOn is called for one and only one server and SecondaryAlwaysOn is called for all other servers participating in the cluster.  We will look at each of these configurations separately.</p>
+<h2 id="PrimaryAlwaysOn-Example"><a href="#PrimaryAlwaysOn-Example" class="headerlink" title="PrimaryAlwaysOn Example"></a>PrimaryAlwaysOn Example</h2><p>Several parts of our configuration will be identical to our Single Instance Install referenced earlier so we won’t go into those details again.  Taking a look at our example configuration <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/PrimaryAlwaysOn/Examples/PrimaryAlwaysOn_Example.ps1">PrimaryAlwaysOn_Example.ps1</a>, we have the same layout as our first three sections.   Credential management, Parms, and LCM config hold the same information we discussed earlier.  The core difference in the example is in the SQL configuration, two resources are called PrimaryAlwaysOn and AvailabilityGroup. Let’s dig into each of these with PrimaryAlwaysOn first.  To understand what’s going on behind the scenes we need to look at the module which is <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/PrimaryAlwaysOn/PrimaryAlwaysOn.schema.psm1">PrimaryAlwaysOn.schema.psm1</a>.  Notice once again in our example we only pass the required parameters for the resource, there are many other parameters which can be passed if required.  Looking into the resources called we see we call four different resources SingleInstanceInstall, WindowsClusterInstall, xcluster, and EnableAlwaysOn.</p>
+<h3 id="PrimaryAlwaysOn"><a href="#PrimaryAlwaysOn" class="headerlink" title="PrimaryAlwaysOn"></a>PrimaryAlwaysOn</h3><h4 id="SingleInstanceInstall"><a href="#SingleInstanceInstall" class="headerlink" title="SingleInstanceInstall"></a>SingleInstanceInstall</h4><p>SingleInstanceInstall should sound familiar as this is the exact resource we just finished dissecting above.</p>
+<h4 id="WindowsClusterInstall"><a href="#WindowsClusterInstall" class="headerlink" title="WindowsClusterInstall"></a>WindowsClusterInstall</h4><p>The next resource is WindowsClusterInstall for which we can look at the its module definition <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/WindowsClusterInstall/WindowsClusterInstall.schema.psm1">WindowsClusterInstall.schema.psm1</a>.  As we look at this resource we see it is simply ensuring the Windows Feature FailoverClustering is installed along with all the tools to manage it.</p>
+<h4 id="xCluster"><a href="#xCluster" class="headerlink" title="xCluster"></a>xCluster</h4><p>xCluster is a resource provided with the xFailoverCluster resource which allows us to create a windows failover cluster.  We must pass the clustername the cluster ip and an account which has the appropriate permissions to create the cluster.</p>
+<h4 id="EnableAlwaysOn"><a href="#EnableAlwaysOn" class="headerlink" title="EnableAlwaysOn"></a>EnableAlwaysOn</h4><p>EnableAlwaysOn is another composite resource provided with SQLServerCompositeResources.  Looking at the module <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/EnableAlwaysOn/EnableAlwaysOn.schema.psm1">EnableAlwaysOn.schema.psm1</a> we see it makes reference to several resources in xSQLServer which are the following:</p>
+<ol>
+<li> xSQLServerLogin -  used to add cluster service account and SQL Service account to the instance</li>
+<li> xSQLServerPermission - used to grant clusterservice account permission to manage availability groups</li>
+<li> xSQLServerEndpoint - used to create endpoints for availability groups</li>
+<li> xSQLServerEndPointPermission - used to grant permissions to endpoints</li>
+<li> xSQLServerAlwaysOnService - used to enable alwayson on SQL instance</li>
+</ol>
+<h3 id="AvailabilityGroup"><a href="#AvailabilityGroup" class="headerlink" title="AvailabilityGroup"></a>AvailabilityGroup</h3><p>AvailabilityGroup is a composite resource which takes a handful of parameters in which only three are required:</p>
+<ol>
+<li> Server - Server to create availability group on</li>
+<li> SQLInstallCredential - Credential with permissions to create availability group</li>
+<li> Availability Group Name - availability group name or as an array of availability groups</li>
+</ol>
+<p>Further exploring the AvailiabilityGroup module <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/AvailabilityGroup/AvailabilityGroup.schema.psm1">AvailabilityGroup.schema.psm1</a>, we will find there are many additional parameters available if needed.  We will also see that ultimately this resource is only calling one resource xSQLServerAlwaysOnAvailabilityGroup within it.  The difference in this resource is that we are looping through the array of availability group names passed and creating each of them.  One assumption made here is that all availability groups will have the same properties when they are created. The remainder of the example is the same.  We copy resources to the server, generate the configuration mof files and push the configuration.</p>
+<h2 id="Secondary-AlwaysOn-Example"><a href="#Secondary-AlwaysOn-Example" class="headerlink" title="Secondary AlwaysOn Example"></a>Secondary AlwaysOn Example</h2><p><a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/SecondaryAlwaysOn/Examples/SecondaryAlwaysOn_Example.ps1">SecondaryAlwaysOn_Example.ps1</a> will look very similar to PrimaryAlwaysOn_Example.ps1 with the difference being it passes all the secondary Nodes in the $ConfigData section as showed below, and calls SecondaryAlwyasOn and AvailabilityGroupJoin:</p>
+<p>$ConfigData = @{</p>
+<p>AllNodes = @(</p>
+<p>@{</p>
+<p>NodeName = ‘*‘</p>
+<p>SqlInstallCredential = $SqlInstallCredential</p>
+<p>SqlServiceCredential = $SqlServiceCredential</p>
+<p>SqlAgentServiceCredential = $SqlAgentServiceCredential</p>
+<p>MofPath = ‘C:Mofs’</p>
+<p>SetupSourcePath = ‘dsc-dcsqlserver’</p>
+<p>SQLSysAdminAccounts = ‘DSCAdministrator’</p>
+<p>ClusterName = ‘DSCTestCluster’</p>
+<p>ClusterIP =‘192.168.210.99’</p>
+<p>PSDscAllowPlainTextPassword = $true</p>
+<p>PSDscAllowDomainUser =$true</p>
+<p>PrimaryAlwaysOnNode = ‘DSC-SQL4’</p>
+<p>AvailabilityGroupName =@(‘AG1’,’AG2’)</p>
+<p>}</p>
+<p>@{NodeName =“DSC-SQL5”}</p>
+<p>@{NodeName =“DSC-SQL6”}</p>
+<p>)</p>
+<p>}</p>
+<h3 id="SecondaryAlwayson"><a href="#SecondaryAlwayson" class="headerlink" title="SecondaryAlwayson"></a>SecondaryAlwayson</h3><p>SecondaryAlwaysOn will look very similar to PrimaryAlwaysOn.  Lets take a look at the differences in the module <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/SecondaryAlwaysOn/SecondaryAlwaysOn.schema.psm1">SecondaryAlwaysOn.schema.psm1</a>.  Here we call SingleInstanceInstall and windows ClusterInstall just as we did in PrimaryAlwaysOn.  What’s different here is that we need to wait for the Cluster to be created from the PrimaryAlwaysOn configuration before we can proceed, so we make a call to the resource xWaitForCluster.  Once the cluster has been found, we make a call to xCluster to join the cluster and then to EnableAlwaysOn to enable alwaysOn on the node.  We have now completed our alwayson configuration on our secondary.</p>
+<h3 id="AvailabilityGroupJoin"><a href="#AvailabilityGroupJoin" class="headerlink" title="AvailabilityGroupJoin"></a>AvailabilityGroupJoin</h3><p>AvailabilityGroupJoin is utilized to join our secondary servers to our primary availability group.  Looking into the the module <a target="_blank" rel="noopener" href="https://github.com/aultt/DSCSQLCompositeResources/blob/master/Modules/SQLCompositeResources/DSCResources/AvailabilityGroupJoin/AvailabilityGroupJoin.schema.psm1">AvailabilityGroupJoin.schema.psm1</a>, we see again that we are looping through each of the availability group names passed.  First we call out to resource xWaitForAvailabilityGroup to ensure the AvailabilityGroup was created on the primary.  Once it has been found, we will leverage xSQLServerAlwaysOnAvailabilityGroupReplica to create the replica and join the server to the availability group. The remainder of the example is the same way we copy resources to the server, generate the configuration mof files and push the configuration.</p>
+<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p>Composite resources allow you to simplify your configurations so they are not as complex to read, and more importantly allow you to reuse code so that it is not duplicated but rather referenced.  Please let me know if there are questions or if there is any confusion around how the resource is put together.  I will be working on the FCI resources and examples and will be publishing them to the GitHub repo and blogging on them here. Call out to Ashley McGlone as I leveraged the his PowerShell module to build the composite resources.  You can read about how to utilize them on his <a target="_blank" rel="noopener" href="https://blogs.technet.microsoft.com/ashleymcglone/2015/02/25/helper-function-to-create-a-powershell-dsc-composite-resource/">blog</a>.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2017/10/09/desired-state-configurationdsc-for-sql-server-update/" data-id="ckv2nrjlc001ep8ii23rk5018" data-title="Desired State Configuration(DSC) for SQL Server ***Update" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Automated-SQL-Install/" rel="tag">Automated SQL Install</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/DSC/" rel="tag">DSC</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Desired-State-Configuration/" rel="tag">Desired State Configuration</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2017/10/20/desired-state-configurationdsc-for-sql-server-update-2/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          Desired State Configuration(DSC) for SQL Server ***Update 2
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2017/08/30/automating-lab-environments-with-labinabox-on-prem-or-in-the-cloud/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Automating Lab Environments with LabInaBox on Prem or in the Cloud.</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/About-Me/">About Me</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/AlwaysOn/">AlwaysOn</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Authentication/">Authentication</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Azure/">Azure</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Container/">Container</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/DSC/">DSC</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Lab/">Lab</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/SQL-Server/">SQL Server</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/">azure</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/">Azure Data Factory</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/Logic-App/">Logic App</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/Logic-App/SSIS/">SSIS</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/Azure-Data-Factory/SSIS/">SSIS</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/azure/SQL/">SQL</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/uncategorized/">uncategorized</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ARM/" rel="tag">ARM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/AlwaysOn/" rel="tag">AlwaysOn</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-Lab/" rel="tag">Automated Lab</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-SQL-Install/" rel="tag">Automated SQL Install</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automated-SSMS/" rel="tag">Automated SSMS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Automation/" rel="tag">Automation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure/" rel="tag">Azure</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Automation/" rel="tag">Azure Automation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Data-Factory/" rel="tag">Azure Data Factory</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Azure-Resource-Manager/" rel="tag">Azure Resource Manager</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cloud/" rel="tag">Cloud</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Credential/" rel="tag">Credential</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Current-SQL-Build/" rel="tag">Current SQL Build</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Custom-Integration-Runtime/" rel="tag">Custom Integration Runtime</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DSC/" rel="tag">DSC</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DSC-at-Scale/" rel="tag">DSC at Scale</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Desired-State-Configuration/" rel="tag">Desired State Configuration</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DevOps/" rel="tag">DevOps</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HyperV-Lab/" rel="tag">HyperV Lab</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Key-Vault/" rel="tag">Key Vault</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LabinaBox/" rel="tag">LabinaBox</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Manged-Instance/" rel="tag">Manged Instance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Migration/" rel="tag">Migration</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PowerShell/" rel="tag">PowerShell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL/" rel="tag">SQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Container/" rel="tag">SQL Container</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Linux/" rel="tag">SQL Linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Server/" rel="tag">SQL Server</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSIS/" rel="tag">SSIS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSMS-Install/" rel="tag">SSMS Install</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Secure-Login/" rel="tag">Secure Login</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/TDE/" rel="tag">TDE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Testing-Environement/" rel="tag">Testing Environement</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/ARM/" style="font-size: 13.33px;">ARM</a> <a href="/tags/AlwaysOn/" style="font-size: 13.33px;">AlwaysOn</a> <a href="/tags/Automated-Lab/" style="font-size: 10px;">Automated Lab</a> <a href="/tags/Automated-SQL-Install/" style="font-size: 15px;">Automated SQL Install</a> <a href="/tags/Automated-SSMS/" style="font-size: 10px;">Automated SSMS</a> <a href="/tags/Automation/" style="font-size: 11.67px;">Automation</a> <a href="/tags/Azure/" style="font-size: 11.67px;">Azure</a> <a href="/tags/Azure-Automation/" style="font-size: 10px;">Azure Automation</a> <a href="/tags/Azure-Data-Factory/" style="font-size: 10px;">Azure Data Factory</a> <a href="/tags/Azure-Resource-Manager/" style="font-size: 10px;">Azure Resource Manager</a> <a href="/tags/Cloud/" style="font-size: 10px;">Cloud</a> <a href="/tags/Credential/" style="font-size: 10px;">Credential</a> <a href="/tags/Current-SQL-Build/" style="font-size: 10px;">Current SQL Build</a> <a href="/tags/Custom-Integration-Runtime/" style="font-size: 10px;">Custom Integration Runtime</a> <a href="/tags/DSC/" style="font-size: 20px;">DSC</a> <a href="/tags/DSC-at-Scale/" style="font-size: 10px;">DSC at Scale</a> <a href="/tags/Desired-State-Configuration/" style="font-size: 16.67px;">Desired State Configuration</a> <a href="/tags/DevOps/" style="font-size: 10px;">DevOps</a> <a href="/tags/HyperV-Lab/" style="font-size: 10px;">HyperV Lab</a> <a href="/tags/Key-Vault/" style="font-size: 10px;">Key Vault</a> <a href="/tags/LabinaBox/" style="font-size: 10px;">LabinaBox</a> <a href="/tags/Manged-Instance/" style="font-size: 10px;">Manged Instance</a> <a href="/tags/Migration/" style="font-size: 10px;">Migration</a> <a href="/tags/PowerShell/" style="font-size: 13.33px;">PowerShell</a> <a href="/tags/SQL/" style="font-size: 13.33px;">SQL</a> <a href="/tags/SQL-Container/" style="font-size: 10px;">SQL Container</a> <a href="/tags/SQL-Linux/" style="font-size: 10px;">SQL Linux</a> <a href="/tags/SQL-Server/" style="font-size: 18.33px;">SQL Server</a> <a href="/tags/SSIS/" style="font-size: 10px;">SSIS</a> <a href="/tags/SSMS-Install/" style="font-size: 10px;">SSMS Install</a> <a href="/tags/Secure-Login/" style="font-size: 10px;">Secure Login</a> <a href="/tags/TDE/" style="font-size: 10px;">TDE</a> <a href="/tags/Testing-Environement/" style="font-size: 10px;">Testing Environement</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/07/">July 2021</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/08/">August 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/03/">March 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/10/">October 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/08/">August 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/05/">May 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/01/">January 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/11/">November 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/09/">September 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">August 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/06/">June 2015</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2021/07/07/automated-oracle-infrastructure-as-code-in-azure/">Oracle Infrastructure as Code in Azure</a>
+          </li>
+        
+          <li>
+            <a href="/2020/08/16/azure-devops-for-the-data-engineer-part-2/">Azure DevOps for the Data Engineer Part 2</a>
+          </li>
+        
+          <li>
+            <a href="/2020/08/10/azure-devops-for-the-data-engineer-part-1/">Azure DevOps for the Data Engineer Part 1</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/31/default-kit/">Default Kit</a>
+          </li>
+        
+          <li>
+            <a href="/2020/01/19/moving-databases-with-tde-to-azure-sql-managed-instance/">Moving Databases with TDE to Azure SQL Managed Instance</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2021 Troy Ault<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>
